@@ -8,7 +8,8 @@ export default function BackendStatusBanner({ className = '' }) {
     const check = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || '/api'
-        const healthUrl = apiUrl === '/api' ? '/health' : `${apiUrl}/health`
+        // If using external backend URL, check /health at root; otherwise check /api/health
+        const healthUrl = apiUrl !== '/api' ? `${apiUrl}/health` : '/api/health'
         const r = await fetch(healthUrl)
         if (!alive) return
         setHealthy(r.ok)

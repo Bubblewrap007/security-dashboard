@@ -17,3 +17,7 @@ router.include_router(admin_router.router)
 @router.get("/")
 async def root():
     return {"message": "Hello from backend!"}
+
+@router.get("/api/health")
+async def api_health():
+    return {"status": "ok"}
