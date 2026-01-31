@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { apiFetch } from '../utils/api'
 
 export default function Nav({ onStartWalkthrough }){
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -9,8 +10,7 @@ export default function Nav({ onStartWalkthrough }){
 
   const handleSignout = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || '/api';
-      await fetch(`${apiUrl}/v1/auth/logout`, {
+      await apiFetch('/api/v1/auth/logout', {
         method: 'POST',
         credentials: 'include'
       });
@@ -24,8 +24,7 @@ export default function Nav({ onStartWalkthrough }){
   useEffect(()=>{
     (async ()=>{
       try{
-        const apiUrl = import.meta.env.VITE_API_URL || '/api';
-        const r = await fetch(`${apiUrl}/v1/auth/me`, {credentials: 'include'})
+        const r = await apiFetch('/api/v1/auth/me', {credentials: 'include'})
         if(r.ok){
           const data = await r.json();
           setIsAuthenticated(true)
@@ -60,8 +59,7 @@ export default function Nav({ onStartWalkthrough }){
     let alive = true
     const check = async () => {
       try{
-        const apiUrl = import.meta.env.VITE_API_URL || '/api';
-        const r = await fetch(`${apiUrl}/../health`)
+        const r = await apiFetch('/health')
         if (!alive) return
         setBackendHealthy(r.ok)
       }catch(e){

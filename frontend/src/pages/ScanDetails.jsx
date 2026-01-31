@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react'
 import { useParams } from 'react-router-dom'
 import BackendStatusBanner from '../components/BackendStatusBanner'
+import { apiFetch } from '../utils/api'
 
 export default function ScanDetails(){
   const { id } = useParams()
@@ -36,11 +37,11 @@ export default function ScanDetails(){
 
   useEffect(()=>{
     (async ()=>{
-      const s = await fetch(`/api/v1/scans/${id}`, {credentials: 'include'})
+      const s = await apiFetch(`/api/v1/scans/${id}`, {credentials: 'include'})
       if(s.ok){ setScan(await s.json()) }
-      const f = await fetch(`/api/v1/scans/${id}/findings`, {credentials: 'include'})
+      const f = await apiFetch(`/api/v1/scans/${id}/findings`, {credentials: 'include'})
       if(f.ok){ setFindings(await f.json()) }
-      const a = await fetch(`/api/v1/assets`, {credentials: 'include'})
+      const a = await apiFetch(`/api/v1/assets`, {credentials: 'include'})
       if(a.ok){ setAssets(await a.json()) }
     })()
   },[id])
@@ -53,7 +54,7 @@ export default function ScanDetails(){
     }
     try {
       setEncrypting(true)
-      const res = await fetch(`/api/v1/scans/${id}/report-encrypted`, {
+      const res = await apiFetch(`/api/v1/scans/${id}/report-encrypted`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

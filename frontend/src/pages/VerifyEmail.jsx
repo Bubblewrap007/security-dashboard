@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import BackendStatusBanner from '../components/BackendStatusBanner'
+import { apiFetch } from '../utils/api'
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams()
@@ -19,7 +20,7 @@ export default function VerifyEmail() {
       }
 
       try {
-        const response = await fetch('/api/v1/auth/verify-email', {
+        const response = await apiFetch('/api/v1/auth/verify-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token })

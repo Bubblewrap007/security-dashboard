@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { apiFetch } from '../utils/api'
 
 export default function BackendStatusBanner({ className = '' }) {
   const [healthy, setHealthy] = useState(null)
@@ -7,10 +8,7 @@ export default function BackendStatusBanner({ className = '' }) {
     let alive = true
     const check = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || '/api'
-        // If using external backend URL, check /health at root; otherwise check /api/health
-        const healthUrl = apiUrl !== '/api' ? `${apiUrl}/health` : '/api/health'
-        const r = await fetch(healthUrl)
+        const r = await apiFetch('/api/health')
         if (!alive) return
         setHealthy(r.ok)
       } catch (e) {

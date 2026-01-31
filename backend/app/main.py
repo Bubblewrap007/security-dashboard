@@ -17,7 +17,8 @@ def _get_cors_origins():
     if ENV == "production":
         return [
             "https://atlanticitsupport.com",
-            "https://www.atlanticitsupport.com"
+            "https://www.atlanticitsupport.com",
+            "https://dashboard.atlanticitsupport.com"
         ]
     return ["http://localhost:5173", "http://localhost", "http://localhost:80"]
 

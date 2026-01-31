@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import BackendStatusBanner from '../components/BackendStatusBanner'
+import { apiFetch } from '../utils/api'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -14,7 +15,7 @@ export default function ForgotPassword() {
     setSuccess(false)
     setResetLink(null)
     try {
-      const res = await fetch(`/api/v1/auth/forgot-password`, {
+      const res = await apiFetch(`/api/v1/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })

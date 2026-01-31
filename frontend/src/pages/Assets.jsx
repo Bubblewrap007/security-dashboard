@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react'
 import BackendStatusBanner from '../components/BackendStatusBanner'
+import { apiFetch } from '../utils/api'
 
 export default function Assets(){
   const [assets, setAssets] = useState([])
@@ -15,7 +16,7 @@ export default function Assets(){
   }
 
   async function fetchAssets(){
-    const res = await fetch(`/api/v1/assets`, {credentials: 'include'})
+    const res = await apiFetch(`/api/v1/assets`, {credentials: 'include'})
     if(res.ok){
       const data = await res.json()
       setAssets(data)
@@ -68,7 +69,7 @@ export default function Assets(){
       return
     }
     
-    const res = await fetch(`/api/v1/assets`, {method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({type, value: normalizedValue})})
+    const res = await apiFetch(`/api/v1/assets`, {method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({type, value: normalizedValue})})
     if(res.ok){ setValue(''); fetchAssets() }
     else if (res.status === 409) {
       alert('This asset already exists.')
@@ -78,7 +79,7 @@ export default function Assets(){
   async function handleDelete(id){
     const ok = window.confirm('Remove this asset?')
     if(!ok) return
-    const res = await fetch(`/api/v1/assets/${id}`, {method: 'DELETE', credentials: 'include'})
+    const res = await apiFetch(`/api/v1/assets/${id}`, {method: 'DELETE', credentials: 'include'})
     if(res.ok){ fetchAssets() }
   }
 

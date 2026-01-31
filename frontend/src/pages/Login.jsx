@@ -2,6 +2,7 @@
 import React, {useEffect, useState} from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import BackendStatusBanner from '../components/BackendStatusBanner'
+import { apiFetch } from '../utils/api'
 
 export default function Login() {
   const [searchParams] = useSearchParams()
@@ -19,7 +20,7 @@ export default function Login() {
     if (unlockToken) {
       ;(async () => {
         try {
-          const res = await fetch(`/api/v1/auth/unlock-account?token=${encodeURIComponent(unlockToken)}`)
+          const res = await apiFetch(`/api/v1/auth/unlock-account?token=${encodeURIComponent(unlockToken)}`)
           if (res.ok) {
             setInfo('Your account has been unlocked. You can sign in now.')
           } else {
@@ -37,7 +38,7 @@ export default function Login() {
     e.preventDefault()
     setError(null)
     try {
-      const res = await fetch(`/api/v1/auth/login`, {
+      const res = await apiFetch(`/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

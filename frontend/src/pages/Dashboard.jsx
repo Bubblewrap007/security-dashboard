@@ -2,6 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react'
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Scatter, ScatterChart } from 'recharts'
 import { Link, Navigate } from 'react-router-dom'
 import BackendStatusBanner from '../components/BackendStatusBanner'
+import { apiFetch } from '../utils/api'
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
@@ -38,7 +39,7 @@ export default function Dashboard(){
 
   useEffect(()=>{
     (async ()=>{
-      const res = await fetch(`/api/v1/auth/me`, { credentials: 'include' })
+      const res = await apiFetch(`/api/v1/auth/me`, { credentials: 'include' })
       if(!res.ok){
         setIsAuthenticated(false)
         setError('Not authenticated')
@@ -46,7 +47,7 @@ export default function Dashboard(){
       }
       const d = await res.json()
       setIsAuthenticated(true)
-      const scansRes = await fetch(`/api/v1/scans`, { credentials: 'include' })
+      const scansRes = await apiFetch(`/api/v1/scans`, { credentials: 'include' })
       if (scansRes.ok) {
         const scansData = await scansRes.json()
         setScans(scansData)
@@ -88,7 +89,7 @@ export default function Dashboard(){
           ])
         }
       }
-      const assetsRes = await fetch(`/api/v1/assets`, { credentials: 'include' })
+      const assetsRes = await apiFetch(`/api/v1/assets`, { credentials: 'include' })
       if (assetsRes.ok) {
         const assetsData = await assetsRes.json()
         setAssets(assetsData)

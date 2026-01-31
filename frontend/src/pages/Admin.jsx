@@ -1,22 +1,23 @@
 import React, {useEffect, useState} from 'react'
 import BackendStatusBanner from '../components/BackendStatusBanner'
+import { apiFetch } from '../utils/api'
 
 export default function Admin(){
   const [users, setUsers] = useState([])
 
   async function fetchUsers(){
-    const res = await fetch(`/api/v1/admin/users`, {credentials: 'include'})
+    const res = await apiFetch(`/api/v1/admin/users`, {credentials: 'include'})
     if(res.ok) setUsers(await res.json())
   }
 
-  useEffect(()=>{fetchUsers()},[])
+  useEffect(()=>{fetchUsers()},[]) 
 
   async function promote(id){
-    const res = await fetch(`/api/v1/admin/users/${id}/promote`, {method: 'POST', credentials: 'include'})
+    const res = await apiFetch(`/api/v1/admin/users/${id}/promote`, {method: 'POST', credentials: 'include'})
     if(res.ok) fetchUsers()
   }
   async function demote(id){
-    const res = await fetch(`/api/v1/admin/users/${id}/demote`, {method: 'POST', credentials: 'include'})
+    const res = await apiFetch(`/api/v1/admin/users/${id}/demote`, {method: 'POST', credentials: 'include'})
     if(res.ok) fetchUsers()
   }
 

@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react'
 import { Link } from 'react-router-dom'
 import BackendStatusBanner from '../components/BackendStatusBanner'
+import { apiFetch } from '../utils/api'
 
 export default function Scans(){
   const [assets, setAssets] = useState([])
@@ -8,7 +9,7 @@ export default function Scans(){
   const [scans, setScans] = useState([])
 
   async function fetchAssets(){
-    const res = await fetch(`/api/v1/assets`, {credentials: 'include'})
+    const res = await apiFetch(`/api/v1/assets`, {credentials: 'include'})
     if(res.ok){ setAssets(await res.json()) }
   }
   useEffect(()=>{fetchAssets(); fetchScans()},[])
@@ -21,7 +22,7 @@ export default function Scans(){
 
   async function startScan(){
     if(!selectedAssetId) return
-    const res = await fetch(`/api/v1/scans`, {
+    const res = await apiFetch(`/api/v1/scans`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       credentials: 'include',
@@ -34,14 +35,14 @@ export default function Scans(){
   }
 
   async function fetchScans(){
-      const res = await fetch(`/api/v1/scans`, {credentials: 'include'})
+      const res = await apiFetch(`/api/v1/scans`, {credentials: 'include'})
     if(res.ok){ setScans(await res.json()) }
   }
 
   async function handleDelete(scanId){
     const ok = window.confirm('Delete this scan and its findings?')
     if(!ok) return
-    const res = await fetch(`/api/v1/scans/${scanId}`, {method: 'DELETE', credentials: 'include'})
+    const res = await apiFetch(`/api/v1/scans/${scanId}`, {method: 'DELETE', credentials: 'include'})
     if(res.ok){ fetchScans() }
   }
 

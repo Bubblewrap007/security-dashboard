@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import BackendStatusBanner from '../components/BackendStatusBanner'
+import { apiFetch } from '../utils/api'
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams()
@@ -39,7 +40,7 @@ export default function ResetPassword() {
 
     setLoading(true)
     try {
-      const res = await fetch(`/api/v1/auth/reset-password`, {
+      const res = await apiFetch(`/api/v1/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, new_password: password })

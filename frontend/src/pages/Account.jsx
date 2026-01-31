@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../utils/api';
 
 export default function Account() {
   const navigate = useNavigate();
@@ -49,7 +50,7 @@ export default function Account() {
 
   const loadUserData = async () => {
     try {
-      const response = await fetch('/api/v1/auth/me', {
+      const response = await apiFetch('/api/v1/auth/me', {
         credentials: 'include',
       });
       if (!response.ok) {
@@ -81,7 +82,7 @@ export default function Account() {
     }
 
     try {
-      const response = await fetch('/api/v1/auth/change-password', {
+      const response = await apiFetch('/api/v1/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -113,7 +114,7 @@ export default function Account() {
     setEmailError('');
 
     try {
-      const response = await fetch('/api/v1/auth/update-email', {
+      const response = await apiFetch('/api/v1/auth/update-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -141,7 +142,7 @@ export default function Account() {
     setResendVerificationError('');
     
     try {
-      const response = await fetch('/api/v1/auth/resend-verification-email', {
+      const response = await apiFetch('/api/v1/auth/resend-verification-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -164,7 +165,7 @@ export default function Account() {
   // Setup TOTP
   const setupTOTP = async () => {
     try {
-      const response = await fetch('/api/v1/auth/mfa/setup-totp', {
+      const response = await apiFetch('/api/v1/auth/mfa/setup-totp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -186,7 +187,7 @@ export default function Account() {
   // Verify TOTP
   const verifyTOTP = async () => {
     try {
-      const response = await fetch('/api/v1/auth/mfa/verify-totp', {
+      const response = await apiFetch('/api/v1/auth/mfa/verify-totp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -217,7 +218,7 @@ export default function Account() {
   // Setup Email MFA
   const setupEmailMFA = async () => {
     try {
-      const response = await fetch('/api/v1/auth/mfa/setup-email', {
+      const response = await apiFetch('/api/v1/auth/mfa/setup-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -238,7 +239,7 @@ export default function Account() {
   // Verify Email MFA
   const verifyEmailMFA = async () => {
     try {
-      const response = await fetch('/api/v1/auth/mfa/verify-email', {
+      const response = await apiFetch('/api/v1/auth/mfa/verify-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -266,7 +267,7 @@ export default function Account() {
   // Setup Phone MFA
   const setupPhoneMFA = async () => {
     try {
-      const response = await fetch('/api/v1/auth/mfa/setup-phone', {
+      const response = await apiFetch('/api/v1/auth/mfa/setup-phone', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -291,7 +292,7 @@ export default function Account() {
   // Verify Phone MFA
   const verifyPhoneMFA = async () => {
     try {
-      const response = await fetch('/api/v1/auth/mfa/verify-phone', {
+      const response = await apiFetch('/api/v1/auth/mfa/verify-phone', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -319,7 +320,7 @@ export default function Account() {
   // Disable MFA
   const disableMFA = async () => {
     try {
-      const response = await fetch('/api/v1/auth/mfa/disable', {
+      const response = await apiFetch('/api/v1/auth/mfa/disable', {
         method: 'POST',
         credentials: 'include',
       });
@@ -345,7 +346,7 @@ export default function Account() {
 
   // Logout
   const handleLogout = async () => {
-    await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+    await apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
     navigate('/');
   };
 
@@ -355,7 +356,7 @@ export default function Account() {
     setDeletingAccount(true);
 
     try {
-      const response = await fetch('/api/v1/auth/delete-account', {
+      const response = await apiFetch('/api/v1/auth/delete-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -111,6 +111,43 @@ In Railway dashboard:
 
 ## Troubleshooting
 
+### Frontend shows "Backend is offline":
+
+1. **Check VITE_API_URL is set correctly** in Railway frontend service:
+
+   ```
+   VITE_API_URL=https://your-backend-service.railway.app
+   ```
+
+   Note: NO trailing slash!
+
+2. **Verify backend service is running**:
+   - Go to Railway dashboard
+   - Check backend service logs for errors
+   - Ensure health endpoint responds: `curl https://your-backend-service.railway.app/health`
+
+3. **Check CORS configuration**:
+   - Backend must allow frontend domain in CORS_ORIGINS
+   - Set in Railway backend service: `CORS_ORIGINS=https://dashboard.atlanticitsupport.com`
+
+4. **Verify frontend was rebuilt** after setting VITE_API_URL:
+   - Railway rebuilds on each deployment
+   - Make sure you redeploy frontend AFTER setting the environment variable
+
+### Dashboard domain not working:
+
+1. **DNS Configuration**: Ensure your DNS has:
+
+   ```
+   dashboard.atlanticitsupport.com  CNAME  your-railway-app.railway.app
+   ```
+
+2. **Railway Custom Domain**:
+   - Add `dashboard.atlanticitsupport.com` in Railway frontend service settings
+   - Wait for SSL certificate provisioning (5-10 minutes)
+
+3. **CORS Configuration**: Update backend to allow dashboard subdomain (already done in code)
+
 ### Services not connecting:
 
 - Check Railway internal networking uses service names (mongo, redis)
