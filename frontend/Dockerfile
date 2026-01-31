@@ -12,18 +12,23 @@ RUN npm run build
 # Production stage - serve with nginx
 FROM nginx:1.25-alpine
 
-# Copy custom nginx config that uses PORT env var
-RUN echo 'server { \
-  listen ${PORT:-80}; \
-  server_name _; \
-  root /usr/share/nginx/html; \
-  index index.html; \
-  location / { \
-    try_files $uri $uri/ /index.html; \
-  } \
-}' > /etc/nginx/templates/default.conf.template
+# Create startup script that handles PORT variable
+RUN echo '#!/bin/sh' > /start.sh && \
+    echo 'PORT=${PORT:-80}' >> /start.sh && \
+    echo 'cat > /etc/nginx/conf.d/default.conf <<EOF' >> /start.sh && \
+    echo 'server {' >> /start.sh && \
+    echo '  listen $PORT;' >> /start.sh && \
+    echo '  server_name _;' >> /start.sh && \
+    echo '  root /usr/share/nginx/html;' >> /start.sh && \
+    echo '  index index.html;' >> /start.sh && \
+    echo '  location / {' >> /start.sh && \
+    echo '    try_files \$uri \$uri/ /index.html;' >> /start.sh && \
+    echo '  }' >> /start.sh && \
+    echo '}' >> /start.sh && \
+    echo 'EOF' >> /start.sh && \
+    echo 'exec nginx -g "daemon off;"' >> /start.sh && \
+    chmod +x /start.sh
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Use envsubst to replace PORT variable and start nginx
-CMD ["/bin/sh", "-c", "envsubst '$$PORT' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
+CMD ["/start.sh"]
