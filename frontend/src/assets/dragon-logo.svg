@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 768 768" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <filter id="dragonGlow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="dragonRadialGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#00D9FF;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#0066BB;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- Background glow circle -->
+  <circle cx="384" cy="384" r="320" fill="url(#dragonRadialGlow)" opacity="0.4"/>
+  
+  <!-- Dragon head (front-facing) -->
+  <g filter="url(#dragonGlow)">
+    <!-- Head shape -->
+    <ellipse cx="384" cy="280" rx="95" ry="110" fill="none" stroke="#00D9FF" stroke-width="3"/>
+    
+    <!-- Snout -->
+    <path d="M 330 320 L 310 340 L 330 350 Q 350 355 384 350 Q 418 355 438 350 L 458 340 L 438 320" 
+          fill="none" stroke="#00D9FF" stroke-width="2.5"/>
+    
+    <!-- Upper jaw detail -->
+    <path d="M 340 300 Q 384 290 428 300" fill="none" stroke="#00B8D4" stroke-width="1.5" opacity="0.8"/>
+    
+    <!-- Eyes -->
+    <circle cx="350" cy="250" r="8" fill="#00D9FF"/>
+    <circle cx="418" cy="250" r="8" fill="#00D9FF"/>
+    <circle cx="350" cy="250" r="4" fill="#001a33"/>
+    <circle cx="418" cy="250" r="4" fill="#001a33"/>
+    
+    <!-- Eye glow -->
+    <circle cx="350" cy="250" r="12" fill="none" stroke="#00D9FF" stroke-width="1" opacity="0.5"/>
+    <circle cx="418" cy="250" r="12" fill="none" stroke="#00D9FF" stroke-width="1" opacity="0.5"/>
+    
+    <!-- Horns -->
+    <path d="M 330 180 Q 310 150 300 120" fill="none" stroke="#00D9FF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M 438 180 Q 458 150 468 120" fill="none" stroke="#00D9FF" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Horn tips glow -->
+    <circle cx="300" cy="120" r="5" fill="#00D9FF" opacity="0.8"/>
+    <circle cx="468" cy="120" r="5" fill="#00D9FF" opacity="0.8"/>
+    
+    <!-- Spine ridge -->
+    <path d="M 384 190 L 384 100" fill="none" stroke="#00B8D4" stroke-width="2" opacity="0.7"/>
+    
+    <!-- Left wing upper -->
+    <path d="M 310 280 Q 200 240 150 300 Q 180 320 250 300 Q 280 310 310 320" 
+          fill="none" stroke="#00D9FF" stroke-width="2.5" stroke-linecap="round"/>
+    
+    <!-- Left wing middle -->
+    <path d="M 300 320 Q 160 340 100 420 Q 150 400 240 380 Q 280 370 300 360" 
+          fill="none" stroke="#00B8D4" stroke-width="2" opacity="0.8"/>
+    
+    <!-- Left wing lower -->
+    <path d="M 295 360 Q 140 420 80 520 Q 140 480 220 440 Q 270 410 295 380" 
+          fill="none" stroke="#0099B8" stroke-width="1.5" opacity="0.6"/>
+    
+    <!-- Right wing upper -->
+    <path d="M 458 280 Q 568 240 618 300 Q 588 320 518 300 Q 488 310 458 320" 
+          fill="none" stroke="#00D9FF" stroke-width="2.5" stroke-linecap="round"/>
+    
+    <!-- Right wing middle -->
+    <path d="M 468 320 Q 608 340 668 420 Q 618 400 528 380 Q 488 370 468 360" 
+          fill="none" stroke="#00B8D4" stroke-width="2" opacity="0.8"/>
+    
+    <!-- Right wing lower -->
+    <path d="M 473 360 Q 628 420 688 520 Q 628 480 548 440 Q 498 410 473 380" 
+          fill="none" stroke="#0099B8" stroke-width="1.5" opacity="0.6"/>
+    
+    <!-- Wing details - left -->
+    <g opacity="0.6">
+      <circle cx="220" cy="300" r="3" fill="#00D9FF"/>
+      <circle cx="180" cy="350" r="2.5" fill="#00B8D4"/>
+      <circle cx="140" cy="420" r="2" fill="#0099B8"/>
+      <circle cx="110" cy="480" r="2" fill="#0099B8"/>
+    </g>
+    
+    <!-- Wing details - right -->
+    <g opacity="0.6">
+      <circle cx="548" cy="300" r="3" fill="#00D9FF"/>
+      <circle cx="588" cy="350" r="2.5" fill="#00B8D4"/>
+      <circle cx="628" cy="420" r="2" fill="#0099B8"/>
+      <circle cx="658" cy="480" r="2" fill="#0099B8"/>
+    </g>
+    
+    <!-- Tail -->
+    <path d="M 384 380 Q 420 480 450 580 Q 460 620 420 650" 
+          fill="none" stroke="#00D9FF" stroke-width="2.5" stroke-linecap="round"/>
+    
+    <!-- Tail secondary curve -->
+    <path d="M 384 380 Q 350 480 320 580 Q 310 620 340 650" 
+          fill="none" stroke="#00B8D4" stroke-width="1.5" opacity="0.7"/>
+    
+    <!-- Tail tip glow -->
+    <circle cx="420" cy="650" r="4" fill="#00D9FF" opacity="0.8"/>
+    <circle cx="340" cy="650" r="3" fill="#00B8D4" opacity="0.6"/>
+  </g>
+  
+  <!-- Network nodes on dragon -->
+  <g filter="url(#dragonGlow)" opacity="0.9">
+    <circle cx="350" cy="250" r="4" fill="#00FF88"/>
+    <circle cx="418" cy="250" r="4" fill="#00FF88"/>
+    <circle cx="200" cy="300" r="3" fill="#00FFFF"/>
+    <circle cx="568" cy="300" r="3" fill="#00FFFF"/>
+    <circle cx="150" cy="400" r="2.5" fill="#0099FF"/>
+    <circle cx="618" cy="400" r="2.5" fill="#0099FF"/>
+  </g>
+</svg>

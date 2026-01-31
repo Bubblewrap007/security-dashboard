@@ -1,0 +1,28 @@
+fastapi==0.100.0
+uvicorn[standard]==0.22.0
+python-jose==3.3.0
+passlib[bcrypt]==1.7.4
+motor==3.5.3
+redis==4.6.0
+rq==1.14.0
+python-dotenv==1.0.0
+# async redis provided by redis package
+gunicorn==20.1.0
+# Network & scanning
+dnspython==2.4.2
+requests==2.31.0
+# email validation
+email-validator==2.0.0
+# TLD extraction for parent-child asset relationships
+tldextract==5.3.1
+# PDF report
+reportlab==4.0.0
+# Encryption for report downloads
+cryptography==42.0.8
+# Multi-factor authentication
+pyotp==2.9.0
+# Dev / testing
+pytest==7.4.0
+pytest-asyncio==0.22.0
+httpx==0.24.1
+

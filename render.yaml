@@ -1,0 +1,84 @@
+services:
+  # MongoDB Database
+  - type: pserv
+    name: security-dashboard-mongo
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./render-mongo.Dockerfile
+    disk:
+      name: mongo-data
+      mountPath: /data/db
+      sizeGB: 10
+    envVars:
+      - key: MONGO_INITDB_DATABASE
+        value: securitydb
+
+  # Redis Cache/Queue
+  - type: pserv
+    name: security-dashboard-redis
+    runtime: docker
+    plan: starter
+    image:
+      url: redis:7-alpine
+
+  # Backend API
+  - type: web
+    name: security-dashboard-backend
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      - key: MONGO_URI
+        fromService:
+          type: pserv
+          name: security-dashboard-mongo
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: pserv
+          name: security-dashboard-redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 60
+      - key: ENVIRONMENT
+        value: production
+
+  # Frontend
+  - type: web
+    name: security-dashboard-frontend
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: security-dashboard-backend
+          property: url
+
+  # Background Worker
+  - type: worker
+    name: security-dashboard-worker
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: rq worker --url $REDIS_URL default
+    envVars:
+      - key: MONGO_URI
+        fromService:
+          type: pserv
+          name: security-dashboard-mongo
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: pserv
+          name: security-dashboard-redis
+          property: connectionString
+      - key: SECRET_KEY
+        sync: false
