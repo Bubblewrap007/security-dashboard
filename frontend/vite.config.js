@@ -5,6 +5,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
-    historyApiFallback: true
+    historyApiFallback: true,
+    proxy: {
+      '/api': {
+        target: 'https://security-dashboard-production.up.railway.app',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   }
 })

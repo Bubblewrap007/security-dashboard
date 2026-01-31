@@ -18,7 +18,10 @@ def _get_cors_origins():
         return [
             "https://atlanticitsupport.com",
             "https://www.atlanticitsupport.com",
-            "https://dashboard.atlanticitsupport.com"
+            "https://dashboard.atlanticitsupport.com",
+            "https://securitydashboard.atlanticitsupport.com",
+            "https://security-dashboard-frontend-production.up.railway.app",
+            "https://frontend-production-9f68.up.railway.app"
         ]
     return ["http://localhost:5173", "http://localhost", "http://localhost:80"]
 
