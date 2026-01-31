@@ -36,6 +36,8 @@ services:
       context: ./frontend
     env_file:
       - ./frontend/.env
+    environment:
+      - ENABLE_PROXY=true
     ports:
       - "5173:80"
     depends_on:
