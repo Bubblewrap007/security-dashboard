@@ -21,4 +21,5 @@ EXPOSE 8000
 
 # Run with gunicorn + uvicorn workers for production
 ENV PYTHONPATH=/app
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "app.main:app"]
+# Use PORT env var from Railway, default to 8000 if not set
+CMD gunicorn -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8000} app.main:app
