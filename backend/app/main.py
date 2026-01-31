@@ -15,7 +15,10 @@ def _get_cors_origins():
     if env_origins:
         return [o.strip() for o in env_origins.split(",") if o.strip()]
     if ENV == "production":
-        return []
+        return [
+            "https://atlanticitsupport.com",
+            "https://www.atlanticitsupport.com"
+        ]
     return ["http://localhost:5173", "http://localhost", "http://localhost:80"]
 
 origins = _get_cors_origins()
