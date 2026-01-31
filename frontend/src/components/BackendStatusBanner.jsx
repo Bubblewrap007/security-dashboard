@@ -7,7 +7,9 @@ export default function BackendStatusBanner({ className = '' }) {
     let alive = true
     const check = async () => {
       try {
-        const r = await fetch(`/health`)
+        const apiUrl = import.meta.env.VITE_API_URL || '/api'
+        const healthUrl = apiUrl === '/api' ? '/health' : `${apiUrl}/health`
+        const r = await fetch(healthUrl)
         if (!alive) return
         setHealthy(r.ok)
       } catch (e) {
