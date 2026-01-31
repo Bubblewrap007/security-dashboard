@@ -3,15 +3,18 @@
 ## What Was Fixed
 
 ### 1. Backend API Routing
+
 - ✅ Added `/api` prefix to all backend routes
 - ✅ Routes are now properly accessible at `/api/v1/auth/...`, `/api/v1/scans/...`, etc.
 
 ### 2. Frontend API Calls
+
 - ✅ Created `apiFetch()` utility in [frontend/src/utils/api.js](frontend/src/utils/api.js)
 - ✅ Updated all 35+ fetch calls across 10+ pages to use `apiFetch()`
 - ✅ Frontend now properly uses `VITE_API_URL` environment variable
 
 ### 3. CORS Configuration
+
 - ✅ Added `https://dashboard.atlanticitsupport.com` to CORS whitelist
 - ✅ Backend now accepts requests from dashboard subdomain
 
@@ -27,6 +30,7 @@ railway up --service backend
 ### Step 2: Get Backend URL
 
 In Railway dashboard:
+
 1. Go to your backend service
 2. Copy the service URL (e.g., `https://security-dashboard-backend-production.up.railway.app`)
 
@@ -38,7 +42,8 @@ In Railway dashboard, go to Frontend service → Variables:
 VITE_API_URL=https://your-backend-service.railway.app
 ```
 
-**IMPORTANT**: 
+**IMPORTANT**:
+
 - NO trailing slash!
 - Must be the exact backend service URL from Railway
 
@@ -66,6 +71,7 @@ Or trigger redeploy in Railway dashboard (frontend must rebuild after setting VI
 ### Step 6: Configure DNS
 
 Add CNAME record:
+
 ```
 dashboard.atlanticitsupport.com → your-frontend-service.railway.app
 ```
@@ -80,15 +86,19 @@ dashboard.atlanticitsupport.com → your-frontend-service.railway.app
 ## Testing
 
 1. **Check backend health**:
+
    ```
    curl https://your-backend.railway.app/health
    ```
+
    Should return: `{"status":"ok"}`
 
 2. **Check API endpoint**:
+
    ```
    curl https://your-backend.railway.app/api/health
    ```
+
    Should return: `{"status":"ok"}`
 
 3. **Open frontend**:
@@ -103,7 +113,8 @@ dashboard.atlanticitsupport.com → your-frontend-service.railway.app
 
 **Cause**: `VITE_API_URL` not set or incorrect
 
-**Fix**: 
+**Fix**:
+
 1. Set `VITE_API_URL` in Railway frontend service
 2. Redeploy frontend (must rebuild with new env var)
 
@@ -111,7 +122,8 @@ dashboard.atlanticitsupport.com → your-frontend-service.railway.app
 
 **Cause**: Backend doesn't allow frontend origin
 
-**Fix**: 
+**Fix**:
+
 1. Set `CORS_ORIGINS=https://dashboard.atlanticitsupport.com` in backend
 2. Redeploy backend
 
@@ -126,6 +138,7 @@ dashboard.atlanticitsupport.com → your-frontend-service.railway.app
 **Cause**: DNS not configured or SSL not ready
 
 **Fix**:
+
 1. Check DNS propagation: `nslookup dashboard.atlanticitsupport.com`
 2. Wait for Railway SSL (5-10 min)
 3. Check Railway custom domain status
@@ -144,7 +157,7 @@ dashboard.atlanticitsupport.com → your-frontend-service.railway.app
 
 ## Important Notes
 
-1. **Environment Variables**: 
+1. **Environment Variables**:
    - Frontend: `VITE_API_URL` must be set BEFORE build
    - Backend: `CORS_ORIGINS` must include frontend domain
 
