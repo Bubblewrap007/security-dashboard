@@ -109,7 +109,9 @@ export default function Nav({ onStartWalkthrough }){
             </>
           ) : authChecked ? (
             <>
-              <Link to="/login" className="text-xs font-semibold px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">Sign In</Link>
+              {location.pathname !== '/login' && (
+                <Link to="/login" className="text-xs font-semibold px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">Sign In</Link>
+              )}
               <Link to="/register" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Register</Link>
             </>
           ) : null}
