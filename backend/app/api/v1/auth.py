@@ -20,6 +20,9 @@ def _is_testing_env():
     import os, sys
     return os.getenv("TESTING", "0") == "1" or "pytest" in sys.modules
 
+def _should_expose_email_links():
+    return os.getenv("EMAIL_DEBUG", "0") == "1" or _is_testing_env()
+
 
 from ...repositories.audit import AuditRepository
 
@@ -32,12 +35,17 @@ async def register(payload: UserCreate):
         await AuditRepository().create_event(actor_id=user.id, action="register", target_type="user", target_id=user.id, details={"username": user.username})
         
         # Send email verification if email provided
+        verification = None
         if user.email:
             from ...services.email_service import EmailService
             email_service = EmailService()
-            await email_service.send_email_verification(user.email)
-        
-        return {"username": user.username, "id": user.id, "email": user.email}
+            verification = await email_service.send_email_verification(user.email)
+
+        response = {"username": user.username, "id": user.id, "email": user.email}
+        if _should_expose_email_links() and isinstance(verification, dict):
+            response["verification_link"] = verification.get("link")
+
+        return response
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -83,7 +91,10 @@ async def resend_verification_email(request: Request, current_user = Depends(get
         
         await AuditRepository().create_event(actor_id=str(current_user.id), action="resend_verification_email", target_type="user", target_id=str(current_user.id), details={"email": current_user.email})
         
-        return {"message": "Verification email resent"}
+        response = {"message": "Verification email resent"}
+        if _should_expose_email_links() and isinstance(result, dict):
+            response["verification_link"] = result.get("link")
+        return response
     except HTTPException:
         raise
     except Exception as e:
@@ -143,7 +154,10 @@ async def forgot_password(payload: ForgotPasswordRequest):
     email_service = EmailService()
     # Always return success to avoid user enumeration
     result = await email_service.send_password_reset_email(payload.email)
-    return {"msg": "If the email exists in our system, password reset instructions have been sent."}
+    response = {"msg": "If the email exists in our system, password reset instructions have been sent."}
+    if _should_expose_email_links() and isinstance(result, dict):
+        response["link"] = result.get("link")
+    return response
 
 @router.post("/reset-password")
 async def reset_password(payload):

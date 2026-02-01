@@ -10,11 +10,13 @@ export default function Register() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
+  const [verificationLink, setVerificationLink] = useState(null)
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
     setSuccess(false)
+    setVerificationLink(null)
     try {
       const res = await apiFetch(`/api/v1/auth/register`, {
         method: 'POST',
@@ -25,6 +27,10 @@ export default function Register() {
         const data = await res.json()
         setError(data.detail || 'Registration failed')
         return
+      }
+      const data = await res.json().catch(() => ({}))
+      if (data?.verification_link) {
+        setVerificationLink(data.verification_link)
       }
       setSuccess(true)
       setTimeout(() => {
@@ -45,7 +51,19 @@ export default function Register() {
         <BackendStatusBanner className="mb-3" />
         <h2 className="text-2xl font-bold mb-6 dark:text-white">Register</h2>
         {error && <div className="text-red-600 dark:text-red-400 mb-4">{error}</div>}
-        {success && <div className="text-green-600 dark:text-green-400 mb-4">Registration successful! {email ? 'Check your email for verification link.' : 'Redirecting...'}</div>}
+        {success && (
+          <div className="text-green-600 dark:text-green-400 mb-4">
+            <div>Registration successful! {email ? 'Check your email for verification link.' : 'Redirecting...'}</div>
+            {verificationLink && (
+              <div className="mt-2 p-2 bg-white dark:bg-slate-700 rounded text-xs break-all">
+                <p className="dark:text-gray-300 mb-1">Verification link:</p>
+                <a href={verificationLink} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+                  Click here to verify email
+                </a>
+              </div>
+            )}
+          </div>
+        )}
         <label className="block mb-2 dark:text-gray-300">Username
           <input className="w-full border px-3 py-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={username} onChange={e => setUsername(e.target.value)} required />
         </label>

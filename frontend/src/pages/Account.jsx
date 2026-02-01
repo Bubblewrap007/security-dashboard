@@ -24,6 +24,7 @@ export default function Account() {
   // Email verification
   const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
   const [resendVerificationError, setResendVerificationError] = useState('');
+  const [resendVerificationLink, setResendVerificationLink] = useState('');
 
   // MFA state management
   const [mfaSetupStep, setMfaSetupStep] = useState(null); // null, 'totp', 'email', 'phone'
@@ -140,6 +141,7 @@ export default function Account() {
   const handleResendVerification = async () => {
     setResendVerificationLoading(true);
     setResendVerificationError('');
+    setResendVerificationLink('');
     
     try {
       const response = await apiFetch('/api/v1/auth/resend-verification-email', {
@@ -148,11 +150,13 @@ export default function Account() {
         credentials: 'include',
       });
 
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.detail || data.message || 'Failed to resend verification email');
       }
-
+      if (data?.verification_link) {
+        setResendVerificationLink(data.verification_link);
+      }
       setSuccess('Verification email sent! Check your inbox.');
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
@@ -458,6 +462,14 @@ export default function Account() {
             </div>
             {resendVerificationError && (
               <p className="text-red-400 text-sm mt-3">{resendVerificationError}</p>
+            )}
+            {resendVerificationLink && (
+              <div className="mt-3 p-2 bg-white/80 dark:bg-slate-800 rounded text-xs break-all">
+                <p className="dark:text-gray-300 mb-1">Verification link:</p>
+                <a href={resendVerificationLink} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">
+                  Click here to verify email
+                </a>
+              </div>
             )}
             <button
               onClick={handleResendVerification}
