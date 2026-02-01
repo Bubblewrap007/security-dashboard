@@ -12,6 +12,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+COOKIE_SESSION_ONLY = os.getenv("COOKIE_SESSION_ONLY", "false").lower() == "true"
 
 # Determine test environment at runtime so tests that import modules early still behave correctly
 
@@ -122,7 +123,7 @@ async def login(payload: LoginRequest, response: Response):
         httponly=True,
         secure=cookie_secure,
         samesite=COOKIE_SAMESITE,
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        max_age=None if COOKIE_SESSION_ONLY else ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path='/'
     )
     import logging
