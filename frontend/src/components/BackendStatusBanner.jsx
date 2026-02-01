@@ -8,7 +8,7 @@ export default function BackendStatusBanner({ className = '' }) {
     let alive = true
     const check = async () => {
       try {
-        const r = await apiFetch('/api/health')
+        const r = await apiFetch('/health')
         if (!alive) return
         setHealthy(r.ok)
       } catch (e) {

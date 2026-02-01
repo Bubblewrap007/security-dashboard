@@ -45,8 +45,20 @@ export default function Login() {
         body: JSON.stringify({ identifier, password })
       })
       if(!res.ok){
-        const data = await res.json()
-        setError(data.detail || 'Login failed')
+        let message = 'Login failed'
+        try {
+          const contentType = res.headers.get('content-type') || ''
+          if (contentType.includes('application/json')) {
+            const data = await res.json()
+            message = data.detail || message
+          } else {
+            const text = await res.text()
+            message = text || message
+          }
+        } catch (err) {
+          // fallback to generic message
+        }
+        setError(message)
         return
       }
       window.location.href = '/dashboard'

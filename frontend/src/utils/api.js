@@ -3,7 +3,8 @@
  * @returns {string} The API base URL
  */
 export function getApiUrl() {
-  return import.meta.env.VITE_API_URL || ''
+  const fallback = 'https://security-dashboard-production.up.railway.app'
+  return import.meta.env.VITE_API_URL || fallback
 }
 
 /**
