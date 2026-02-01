@@ -149,6 +149,10 @@ export default function Account() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
       });
+      if (response.status === 401) {
+        navigate('/login');
+        return;
+      }
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -158,6 +162,7 @@ export default function Account() {
         setResendVerificationLink(data.verification_link);
       }
       setSuccess('Verification email sent! Check your inbox.');
+      await loadUserData();
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
       setResendVerificationError(err.message);
@@ -350,8 +355,17 @@ export default function Account() {
 
   // Logout
   const handleLogout = async () => {
-    await apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
-    navigate('/');
+    try {
+      const response = await apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || data.message || 'Logout failed');
+      }
+      setUser(null);
+      navigate('/login', { replace: true });
+    } catch (err) {
+      setError(err.message || 'Logout failed');
+    }
   };
 
   // Delete account
