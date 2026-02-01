@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   backend-tests:
@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - name: Install backend deps
         working-directory: ./backend
         run: |
@@ -24,8 +24,10 @@ jobs:
           pip install -r requirements.txt
       - name: Run tests
         working-directory: ./backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
         run: |
-          pytest -q
+          python -m pytest -q
 
   frontend-build:
     runs-on: ubuntu-latest
@@ -34,7 +36,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
       - name: Install and build frontend
         working-directory: ./frontend
         run: |
