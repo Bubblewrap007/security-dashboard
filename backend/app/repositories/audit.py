@@ -1,12 +1,12 @@
 from typing import Optional, Dict
 from ..models.audit import AuditEventInDB
-from ..db.client import get_db
+from ..db.client import get_db, get_database
 from bson import ObjectId
 
 class AuditRepository:
     def __init__(self, db_client=None):
         self._client = db_client or get_db()
-        self._db = self._client.get_default_database()
+        self._db = get_database()
         self._col = self._db.get_collection("audit_events")
 
     async def create_event(self, actor_id: Optional[str], action: str, target_type: Optional[str] = None, target_id: Optional[str] = None, details: Optional[Dict] = None):

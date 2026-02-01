@@ -1,6 +1,6 @@
 from typing import List, Optional
 from ..models.asset import AssetInDB, AssetCreate
-from ..db.client import get_db
+from ..db.client import get_db, get_database
 from bson import ObjectId
 import tldextract
 
@@ -56,7 +56,7 @@ def normalize_asset_value(asset_type: str, value: str) -> str:
 class AssetRepository:
     def __init__(self, db_client=None):
         self._client = db_client or get_db()
-        self._db = self._client.get_default_database()
+        self._db = get_database()
         self._col = self._db.get_collection("assets")
 
     async def create(self, user_id: str, payload: AssetCreate) -> AssetInDB:

@@ -1,13 +1,13 @@
 from typing import Optional
 from ..models.scan import ScanInDB, ScanBase
-from ..db.client import get_db
+from ..db.client import get_db, get_database
 from bson import ObjectId
 from datetime import datetime
 
 class ScanRepository:
     def __init__(self, db_client=None):
         self._client = db_client or get_db()
-        self._db = self._client.get_default_database()
+        self._db = get_database()
         self._col = self._db.get_collection("scans")
 
     async def create(self, user_id: str, payload: ScanBase) -> ScanInDB:

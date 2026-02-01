@@ -3,6 +3,7 @@ from typing import Optional, Any, Dict, List
 import logging
 import os
 from bson import ObjectId
+from pymongo.errors import ConfigurationError
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +108,23 @@ def get_db():
             return client
         raise RuntimeError("Database client not initialized")
     return client
+
+
+def get_database(db_name: Optional[str] = None):
+    """Return a database handle even when MONGO_URI has no default db name."""
+    c = get_db()
+    if isinstance(c, InMemoryClient):
+        return c.get_default_database()
+
+    name = (db_name or os.getenv("MONGO_DB_NAME") or "").strip()
+    if name:
+        return c.get_database(name)
+
+    try:
+        return c.get_default_database()
+    except ConfigurationError:
+        # Fallback to a sane default if the URI has no db name
+        return c.get_database("mydb")
 
 
 def close_db():
