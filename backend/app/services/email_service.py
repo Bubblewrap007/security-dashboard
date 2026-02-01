@@ -5,6 +5,9 @@ from datetime import datetime, timedelta
 from app.repositories.users import UserRepository
 from app.core.security import create_access_token
 import logging
+import asyncio
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 logger = logging.getLogger("app.email")
 
@@ -13,6 +16,34 @@ class EmailService:
     
     def __init__(self):
         self.frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+        self.backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")
+        self.from_email = os.getenv("SENDGRID_FROM_EMAIL", "no-reply@example.com")
+        self.sendgrid_api_key = os.getenv("SENDGRID_API_KEY", "")
+
+    async def _send_email(self, to_email: str, subject: str, html_content: str, text_content: str = ""):
+        """Send an email using SendGrid if configured"""
+        if not self.sendgrid_api_key:
+            logger.warning("SENDGRID_API_KEY not set; skipping email send to %s", to_email)
+            return False
+
+        message = Mail(
+            from_email=self.from_email,
+            to_emails=to_email,
+            subject=subject,
+            plain_text_content=text_content or subject,
+            html_content=html_content,
+        )
+
+        def _send():
+            sg = SendGridAPIClient(self.sendgrid_api_key)
+            return sg.send(message)
+
+        try:
+            await asyncio.to_thread(_send)
+            return True
+        except Exception as e:
+            logger.error("SendGrid send failed: %s", e)
+            return False
     
     async def send_email_verification(self, email: str):
         """Generate and send email verification token"""
@@ -35,8 +66,18 @@ class EmailService:
         # Generate verification link
         verify_link = f"{self.frontend_url}/verify-email?token={verification_token}"
         
-        # Log the verification link (in production, this would send an actual email)
+        # Send verification email (or log if not configured)
         logger.info(f"Email verification link for {email}: {verify_link}")
+
+        await self._send_email(
+            to_email=email,
+            subject="Verify your Security Dashboard email",
+            text_content=f"Verify your email: {verify_link}",
+            html_content=(
+                f"<p>Please verify your email address by clicking the link below:</p>"
+                f"<p><a href=\"{verify_link}\">Verify Email</a></p>"
+            ),
+        )
         
         # For demo purposes, return the token
         return {
@@ -85,8 +126,18 @@ class EmailService:
         # Generate reset link
         reset_link = f"{self.frontend_url}/reset-password?token={reset_token}"
         
-        # Log the reset link (in production, this would send an actual email)
+        # Send reset email (or log if not configured)
         logger.info(f"Password reset link for {email}: {reset_link}")
+
+        await self._send_email(
+            to_email=email,
+            subject="Reset your Security Dashboard password",
+            text_content=f"Reset your password: {reset_link}",
+            html_content=(
+                f"<p>You requested a password reset.</p>"
+                f"<p><a href=\"{reset_link}\">Reset Password</a></p>"
+            ),
+        )
         
         # For demo purposes, return the token so we can test it
         return {
@@ -110,7 +161,7 @@ class EmailService:
         )
 
         unlock_link = f"{self.frontend_url}/login?unlock={unlock_token}"
-        api_unlock_link = f"{os.getenv('BACKEND_URL', 'http://localhost:8000')}/api/v1/auth/unlock-account?token={unlock_token}"
+        api_unlock_link = f"{self.backend_url}/api/v1/auth/unlock-account?token={unlock_token}"
         reset_link = f"{self.frontend_url}/reset-password?token={reset_token}"
 
         logger.info(
@@ -120,6 +171,20 @@ class EmailService:
             unlock_link,
             api_unlock_link,
             reset_link,
+        )
+
+        await self._send_email(
+            to_email=email,
+            subject="Security Dashboard account locked",
+            text_content=(
+                f"Your account was locked due to failed logins. Unlock: {unlock_link} "
+                f"or reset password: {reset_link}"
+            ),
+            html_content=(
+                f"<p>Your account was locked due to failed logins.</p>"
+                f"<p><a href=\"{unlock_link}\">Unlock Account</a></p>"
+                f"<p><a href=\"{reset_link}\">Reset Password</a></p>"
+            ),
         )
 
         return {
