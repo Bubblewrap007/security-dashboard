@@ -146,7 +146,13 @@ async def unlock_account(token: str):
 
 @router.post("/logout")
 async def logout(response: Response):
-    response.delete_cookie("access_token", path="/")
+    cookie_secure = COOKIE_SECURE and not _is_testing_env()
+    response.delete_cookie(
+        "access_token",
+        path="/",
+        samesite=COOKIE_SAMESITE,
+        secure=cookie_secure,
+    )
     return {"msg": "logged out"}
 
 @router.post("/forgot-password")
