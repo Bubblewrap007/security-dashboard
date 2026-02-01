@@ -61,6 +61,10 @@ class UserRepository:
         await self._col.update_one({"_id": ObjectId(user_id)}, {"$set": {"email": new_email}})
         return await self.get_by_id(user_id)
 
+    async def update_timezone(self, user_id: str, timezone: str):
+        await self._col.update_one({"_id": ObjectId(user_id)}, {"$set": {"timezone": timezone}})
+        return await self.get_by_id(user_id)
+
     async def increment_failed_login(self, user_id: str) -> int:
         """Increment failed login attempts and return new count."""
         await self._col.update_one(

@@ -26,6 +26,10 @@ export default function Account() {
   const [resendVerificationError, setResendVerificationError] = useState('');
   const [resendVerificationLink, setResendVerificationLink] = useState('');
 
+  // Timezone
+  const [timeZone, setTimeZone] = useState('');
+  const [timeZoneError, setTimeZoneError] = useState('');
+
   // MFA state management
   const [mfaSetupStep, setMfaSetupStep] = useState(null); // null, 'totp', 'email', 'phone'
   const [mfaSecret, setMfaSecret] = useState('');
@@ -60,10 +64,68 @@ export default function Account() {
       }
       const userData = await response.json();
       setUser(userData);
+      if (userData?.timezone) {
+        setTimeZone(userData.timezone);
+      }
       setLoading(false);
     } catch (err) {
       setError(err.message);
       setLoading(false);
+    }
+  };
+
+  const getBrowserTimeZone = () => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const timeZoneOptions = (() => {
+    if (typeof Intl !== 'undefined' && Intl.supportedValuesOf) {
+      return Intl.supportedValuesOf('timeZone');
+    }
+    return [
+      'UTC',
+      'America/New_York',
+      'America/Chicago',
+      'America/Denver',
+      'America/Los_Angeles',
+      'Europe/London',
+      'Europe/Paris',
+      'Asia/Tokyo',
+      'Asia/Manila',
+      'Australia/Sydney',
+    ];
+  })();
+
+  const handleTimeZoneSave = async (tz) => {
+    setTimeZoneError('');
+    const selected = tz || timeZone;
+    if (!selected) {
+      setTimeZoneError('Please select a timezone.');
+      return;
+    }
+
+    try {
+      const response = await apiFetch('/api/v1/auth/update-timezone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ timezone: selected }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || 'Failed to update timezone');
+      }
+
+      setSuccess('Timezone updated successfully');
+      await loadUserData();
+      setTimeout(() => setSuccess(''), 5000);
+    } catch (err) {
+      setTimeZoneError(err.message);
     }
   };
 
@@ -445,9 +507,15 @@ export default function Account() {
               <span className="text-gray-400">Last Login:</span>
               <span className="ml-2 text-white font-mono">
                 {user?.last_login 
-                  ? new Date(user.last_login).toLocaleString()
+                  ? new Date(user.last_login).toLocaleString(undefined, { timeZone: user?.timezone || timeZone || getBrowserTimeZone() || undefined })
                   : 'Never'
                 }
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-400">Time Zone:</span>
+              <span className="ml-2 text-white font-mono">
+                {user?.timezone || timeZone || getBrowserTimeZone() || 'Not set'}
               </span>
             </div>
             <div className="pt-2 border-t border-gray-700">
@@ -494,6 +562,44 @@ export default function Account() {
             </button>
           </div>
         )}
+
+        {/* Time Zone Preferences */}
+        <div className="mb-8 p-6 border border-indigo-600 rounded-lg bg-gray-900">
+          <h3 className="text-xl font-bold text-indigo-400 mb-4">Time Zone</h3>
+          <p className="text-gray-400 mb-3">Select your time zone so timestamps match your locale.</p>
+          <div className="flex flex-col gap-3">
+            <select
+              value={timeZone}
+              onChange={(e) => setTimeZone(e.target.value)}
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded text-white"
+            >
+              <option value="">Auto-detect</option>
+              {timeZoneOptions.map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+            {timeZoneError && <p className="text-red-400">{timeZoneError}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleTimeZoneSave()}
+                className="flex-1 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition"
+              >
+                Save Time Zone
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const tz = getBrowserTimeZone();
+                  setTimeZone(tz);
+                  if (tz) handleTimeZoneSave(tz);
+                }}
+                className="flex-1 p-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition"
+              >
+                Use My Time Zone
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Update Email Card */}
         {!showEmailForm ? (

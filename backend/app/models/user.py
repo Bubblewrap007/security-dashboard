@@ -23,5 +23,6 @@ class UserInDB(BaseModel):
     phone_number: Optional[str] = None
     github_username: Optional[str] = None
     last_login: Optional[datetime] = None
+    timezone: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True, validate_by_name=True)

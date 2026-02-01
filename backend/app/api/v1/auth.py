@@ -201,6 +201,7 @@ async def me(current_user = Depends(get_current_user)):
         "mfa_method": current_user.mfa_method,
         "email_verified": current_user.email_verified,
         "last_login": current_user.last_login,
+        "timezone": getattr(current_user, "timezone", None),
     }
 
 @router.post("/change-password")
@@ -250,6 +251,27 @@ async def update_email(request: Request, current_user = Depends(get_current_user
     await AuditRepository().create_event(actor_id=str(current_user.id), action="update_email", target_type="user", target_id=str(current_user.id), details={"username": current_user.username, "new_email": new_email})
     
     return {"msg": "Email updated successfully"}
+
+@router.post("/update-timezone")
+async def update_timezone(request: Request, current_user = Depends(get_current_user)):
+    body = await request.json()
+    timezone = body.get("timezone")
+
+    if not timezone or not isinstance(timezone, str):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Timezone required")
+
+    user_repo = UserRepository()
+    await user_repo.update_timezone(current_user.id, timezone)
+
+    await AuditRepository().create_event(
+        actor_id=str(current_user.id),
+        action="update_timezone",
+        target_type="user",
+        target_id=str(current_user.id),
+        details={"timezone": timezone},
+    )
+
+    return {"msg": "Timezone updated successfully"}
 
 @router.post("/delete-account")
 async def delete_account(request: Request, response: Response, current_user = Depends(get_current_user)):

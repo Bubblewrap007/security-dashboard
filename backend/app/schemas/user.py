@@ -28,6 +28,7 @@ class UserOut(BaseModel):
     mfa_method: Optional[str] = None
     email_verified: bool = False
     last_login: Optional[datetime] = None
+    timezone: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str
