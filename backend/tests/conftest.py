@@ -1,6 +1,12 @@
 import os
+import sys
 # Ensure app modules detect test mode early
 os.environ.setdefault("TESTING", "1")
+
+# Ensure backend root is on sys.path so `import app` works in CI.
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
 # Also ensure the RateLimitMiddleware is not active on the app during tests.
 # Some imports may add the middleware before pytest can set flags; proactively remove it.
