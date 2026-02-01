@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime
 from httpx import AsyncClient
 from bson import ObjectId
 from app.main import app
@@ -20,6 +21,13 @@ class FakeUserRepo:
                 return UserInDB(**d_copy)
         return None
 
+    async def get_by_email(self, email: str):
+        for d in FakeUserRepo.storage.values():
+            if d.get("email") == email:
+                d_copy = dict(d)
+                return UserInDB(**d_copy)
+        return None
+
     async def create_user(self, user_dict: dict):
         # Generate a valid ObjectId string for testing purposes
         uid = str(ObjectId())
@@ -28,6 +36,10 @@ class FakeUserRepo:
         user_dict.setdefault("roles", [])
         user_dict.setdefault("is_superuser", False)
         user_dict.setdefault("is_active", True)
+        user_dict.setdefault("failed_login_attempts", 0)
+        user_dict.setdefault("lockout_until", None)
+        user_dict.setdefault("unlock_token", None)
+        user_dict.setdefault("last_login", None)
         user_dict["_id"] = uid
         FakeUserRepo.storage[uid] = user_dict
         return UserInDB(**user_dict)
@@ -48,6 +60,39 @@ class FakeUserRepo:
         d["is_superuser"] = bool(is_super)
         FakeUserRepo.storage[str(user_id)] = d
         return UserInDB(**d)
+
+    async def increment_failed_login(self, user_id: str):
+        d = FakeUserRepo.storage.get(str(user_id))
+        if not d:
+            return 0
+        d["failed_login_attempts"] = int(d.get("failed_login_attempts", 0)) + 1
+        FakeUserRepo.storage[str(user_id)] = d
+        return d["failed_login_attempts"]
+
+    async def clear_failed_logins(self, user_id: str):
+        d = FakeUserRepo.storage.get(str(user_id))
+        if not d:
+            return None
+        d["failed_login_attempts"] = 0
+        FakeUserRepo.storage[str(user_id)] = d
+        return True
+
+    async def set_lockout(self, user_id: str, lockout_until, unlock_token: str):
+        d = FakeUserRepo.storage.get(str(user_id))
+        if not d:
+            return None
+        d["lockout_until"] = lockout_until
+        d["unlock_token"] = unlock_token
+        FakeUserRepo.storage[str(user_id)] = d
+        return True
+
+    async def set_last_login(self, user_id: str):
+        d = FakeUserRepo.storage.get(str(user_id))
+        if not d:
+            return None
+        d["last_login"] = datetime.utcnow()
+        FakeUserRepo.storage[str(user_id)] = d
+        return True
 
 @pytest.fixture(autouse=True)
 def fake_repo_monkeypatch(monkeypatch):
