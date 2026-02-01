@@ -129,6 +129,20 @@ export default function Account() {
     }
   };
 
+  const parseLastLogin = (value) => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'string') {
+      // If backend sends naive UTC (no timezone), treat as UTC.
+      const hasZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(value);
+      const iso = hasZone ? value : `${value}Z`;
+      const parsed = new Date(iso);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+    const parsed = new Date(value);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  };
+
   // Password change handler
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -507,7 +521,7 @@ export default function Account() {
               <span className="text-gray-400">Last Login:</span>
               <span className="ml-2 text-white font-mono">
                 {user?.last_login 
-                  ? new Date(user.last_login).toLocaleString(undefined, { timeZone: user?.timezone || timeZone || getBrowserTimeZone() || undefined })
+                  ? (parseLastLogin(user.last_login)?.toLocaleString(undefined, { timeZone: user?.timezone || timeZone || getBrowserTimeZone() || undefined }) || 'Never')
                   : 'Never'
                 }
               </span>
