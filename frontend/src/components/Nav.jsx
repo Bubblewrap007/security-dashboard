@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { apiFetch } from '../utils/api'
 
 export default function Nav({ onStartWalkthrough }){
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(null)
+  const [authChecked, setAuthChecked] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [backendHealthy, setBackendHealthy] = useState(null)
   const [darkMode, setDarkMode] = useState(false)
+  const location = useLocation()
 
   const handleSignout = async () => {
     try {
@@ -22,21 +24,30 @@ export default function Nav({ onStartWalkthrough }){
   }
 
   useEffect(()=>{
-    (async ()=>{
+    let alive = true
+    ;(async ()=>{
       try{
         const r = await apiFetch('/api/v1/auth/me', {credentials: 'include'})
+        if (!alive) return
         if(r.ok){
           const data = await r.json();
           setIsAuthenticated(true)
           setIsAdmin(Boolean(data.is_superuser))
         } else {
           setIsAuthenticated(false)
+          setIsAdmin(false)
         }
       }catch(e){
+        if (!alive) return
         setIsAuthenticated(false)
+        setIsAdmin(false)
+      } finally {
+        if (!alive) return
+        setAuthChecked(true)
       }
     })()
-  },[])
+    return () => { alive = false }
+  },[location.pathname])
 
   useEffect(() => {
     const stored = localStorage.getItem('sd_dark_mode')
@@ -87,21 +98,21 @@ export default function Nav({ onStartWalkthrough }){
           </div>
         </div>
         <div className="flex items-center space-x-4">
-          {isAuthenticated ? (
+          {authChecked && isAuthenticated ? (
             <>
+              <Link to="/account" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Account</Link>
               <Link to="/dashboard" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Dashboard</Link>
               <Link to="/assets" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Assets</Link>
               <Link to="/scans" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Scans</Link>
               {isAdmin && <Link to="/admin" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Admin</Link>}
               <button onClick={handleSignout} className="text-sm font-semibold px-3 py-1.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors">Sign Out</button>
-              <Link to="/account" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Account</Link>
             </>
-          ) : (
+          ) : authChecked ? (
             <>
               <Link to="/login" className="text-xs font-semibold px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">Sign In</Link>
               <Link to="/register" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Register</Link>
             </>
-          )}
+          ) : null}
         </div>
       </div>
     </nav>
