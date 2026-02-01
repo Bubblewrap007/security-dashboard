@@ -3,8 +3,11 @@ import { apiFetch } from '../utils/api'
 
 export default function BackendStatusBanner({ className = '' }) {
   const [healthy, setHealthy] = useState(null)
+  const maintenanceMessage = import.meta.env.VITE_MAINTENANCE_MESSAGE
+  const maintenanceMode = (import.meta.env.VITE_MAINTENANCE_MODE || '').toLowerCase() === 'true' || Boolean(maintenanceMessage)
 
   useEffect(() => {
+    if (maintenanceMode) return
     let alive = true
     const check = async () => {
       try {
@@ -20,6 +23,15 @@ export default function BackendStatusBanner({ className = '' }) {
     const id = setInterval(check, 10000)
     return () => { alive = false; clearInterval(id) }
   }, [])
+
+  if (maintenanceMode) {
+    return (
+      <div className={`flex items-center text-sm rounded p-2 mb-4 ${className} bg-yellow-50 border border-yellow-200 text-yellow-800`}>
+        <span className="inline-block w-2 h-2 rounded-full mr-2 bg-yellow-500" />
+        {maintenanceMessage || 'Maintenance in progress. Please check back soon.'}
+      </div>
+    )
+  }
 
   return (
     <div className={`flex items-center text-sm rounded p-2 mb-4 ${className} ${healthy === false ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'}`}>
