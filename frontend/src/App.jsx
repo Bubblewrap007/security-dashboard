@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import React, { useEffect, useState, useRef } from 'react'
+import { apiFetch } from './utils/api'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Assets from './pages/Assets'
@@ -23,6 +24,7 @@ function AppShell() {
   const [showIdleWarning, setShowIdleWarning] = useState(false)
   const [idleSecondsLeft, setIdleSecondsLeft] = useState(60)
   const idleTimers = useRef({ warning: null, logout: null, countdown: null })
+  const sessionCloseKey = 'sd_last_closed_at'
 
   const isProtectedRoute = (path) => {
     const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email']
@@ -59,10 +61,34 @@ function AppShell() {
     idleTimers.current.logout = setTimeout(async () => {
       clearIdleTimers()
       setShowIdleWarning(false)
-      await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' })
+      await apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' })
       navigate('/login?message=idle-timeout')
     }, logoutMs)
   }
+
+  useEffect(() => {
+    const lastClosed = localStorage.getItem(sessionCloseKey)
+    if (lastClosed) {
+      const elapsedMs = Date.now() - Number(lastClosed)
+      if (!Number.isNaN(elapsedMs) && elapsedMs >= 60 * 1000) {
+        apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' }).finally(() => {
+          localStorage.removeItem(sessionCloseKey)
+          if (isProtectedRoute(location.pathname)) {
+            navigate('/login')
+          }
+        })
+      }
+    }
+
+    const handleBeforeUnload = () => {
+      localStorage.setItem(sessionCloseKey, String(Date.now()))
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [location.pathname])
 
   useEffect(() => {
     if (!isProtectedRoute(location.pathname)) {
@@ -120,7 +146,7 @@ function AppShell() {
                 onClick={async () => {
                   clearIdleTimers()
                   setShowIdleWarning(false)
-                  await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' })
+                  await apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' })
                   navigate('/login?message=idle-timeout')
                 }}
               >

@@ -90,15 +90,15 @@ export default function Nav({ onStartWalkthrough }){
           {isAuthenticated ? (
             <>
               <Link to="/dashboard" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Dashboard</Link>
-              <Link to="/account" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Account</Link>
               <Link to="/assets" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Assets</Link>
               <Link to="/scans" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Scans</Link>
               {isAdmin && <Link to="/admin" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Admin</Link>}
               <button onClick={handleSignout} className="text-sm font-semibold px-3 py-1.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors">Sign Out</button>
+              <Link to="/account" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Account</Link>
             </>
           ) : (
             <>
-              <Link to="/login" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Login</Link>
+              <Link to="/login" className="text-xs font-semibold px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">Sign In</Link>
               <Link to="/register" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Register</Link>
             </>
           )}
