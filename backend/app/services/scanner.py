@@ -96,43 +96,59 @@ def check_email_hibp(scan_id: str, asset_id: str, email: str) -> List[Dict]:
 
 # DNS checks
 
+def has_mx_records(domain: str) -> bool:
+    try:
+        answers = dns.resolver.resolve(domain, "MX")
+        return len(list(answers)) > 0
+    except Exception:
+        return False
+
 def check_spf(scan_id: str, asset_id: str, domain: str) -> List[Dict]:
     findings = []
+    mx_exists = has_mx_records(domain)
     try:
         answers = dns.resolver.resolve(domain, "TXT")
         texts = [b"".join(r.strings).decode() for r in answers]
         spf_records = [t for t in texts if t.startswith("v=spf1")]
         if not spf_records:
-            findings.append(build_finding(scan_id, asset_id, "spf:missing", "high", "SPF record missing", {"txt_records": texts}, "Publish an SPF TXT record specifying authorized mail sources"))
+            if mx_exists:
+                findings.append(build_finding(scan_id, asset_id, "spf:missing", "high", "SPF record missing", {"txt_records": texts}, "Publish an SPF TXT record specifying authorized mail sources"))
+            else:
+                findings.append(build_finding(scan_id, asset_id, "spf:missing", "low", "SPF record missing", {"txt_records": texts, "note": "No MX records detected. If this domain does not send email, this is informational.", "scoring_impact": "none"}, "If you send email from this domain, publish an SPF TXT record specifying authorized mail sources"))
         else:
             # basic check for all
             pass
     except Exception as e:
-        findings.append(build_finding(scan_id, asset_id, "spf:error", "low", "SPF lookup failed", {"error": str(e)}, "Ensure DNS is resolvable and public records are available"))
+        findings.append(build_finding(scan_id, asset_id, "spf:error", "low", "SPF lookup failed", {"error": str(e), "note": "DNS lookup failed. If this domain does not send email, this is informational.", "scoring_impact": "none"}, "Ensure DNS is resolvable and public records are available"))
     return findings
 
 
 def check_dmarc(scan_id: str, asset_id: str, domain: str) -> List[Dict]:
     findings = []
+    mx_exists = has_mx_records(domain)
     try:
         name = f"_dmarc.{domain}"
         answers = dns.resolver.resolve(name, "TXT")
         texts = [b"".join(r.strings).decode() for r in answers]
         dmarc = [t for t in texts if t.lower().startswith("v=dmarc")]
         if not dmarc:
-            findings.append(build_finding(scan_id, asset_id, "dmarc:missing", "high", "DMARC record missing", {"txt_records": texts}, "Publish a DMARC policy in DNS to help reduce email spoofing"))
+            if mx_exists:
+                findings.append(build_finding(scan_id, asset_id, "dmarc:missing", "high", "DMARC record missing", {"txt_records": texts}, "Publish a DMARC policy in DNS to help reduce email spoofing"))
+            else:
+                findings.append(build_finding(scan_id, asset_id, "dmarc:missing", "low", "DMARC record missing", {"txt_records": texts, "note": "No MX records detected. If this domain does not send email, this is informational.", "scoring_impact": "none"}, "If you send email from this domain, publish a DMARC policy in DNS to help reduce spoofing"))
         else:
             # check policy
             record = dmarc[0]
             if "p=none" in record.lower():
                 findings.append(build_finding(scan_id, asset_id, "dmarc:policy_none", "medium", "DMARC policy set to none", {"record": record}, "Consider enforcing DMARC policy to quarantine or reject (p=quarantine|reject) after testing"))
     except Exception as e:
-        findings.append(build_finding(scan_id, asset_id, "dmarc:error", "low", "DMARC lookup failed", {"error": str(e)}, "Ensure DNS is resolvable and public records are available"))
+        findings.append(build_finding(scan_id, asset_id, "dmarc:error", "low", "DMARC lookup failed", {"error": str(e), "note": "DNS lookup failed. If this domain does not send email, this is informational.", "scoring_impact": "none"}, "Ensure DNS is resolvable and public records are available"))
     return findings
 
 
 def check_dkim(scan_id: str, asset_id: str, domain: str) -> List[Dict]:
     findings = []
+    mx_exists = has_mx_records(domain)
     try:
         # check for any _domainkey records
         name = f"default._domainkey.{domain}"
@@ -146,7 +162,10 @@ def check_dkim(scan_id: str, asset_id: str, domain: str) -> List[Dict]:
             # if exists, we won't mark missing here; many domains use selectors
             pass
     except Exception as e:
-        findings.append(build_finding(scan_id, asset_id, "dkim:error", "low", "DKIM lookup failed", {"error": str(e)}, "Ensure DNS is resolvable and public records are available"))
+        note = "DNS lookup failed. If this domain does not send email, this is informational."
+        if mx_exists:
+            note = "DNS lookup failed. If you send email from this domain, verify DKIM selectors with your provider."
+        findings.append(build_finding(scan_id, asset_id, "dkim:error", "low", "DKIM lookup failed", {"error": str(e), "note": note, "scoring_impact": "none"}, "Ensure DNS is resolvable and public records are available"))
     return findings
 
 
@@ -233,8 +252,10 @@ def score_from_findings(findings: List[Dict]) -> tuple[int, dict]:
     for f in findings:
         sev = f.get('severity')
         if sev in SEVERITY_DEDUCTIONS:
-            score -= SEVERITY_DEDUCTIONS[sev]
             counts[sev] += 1
+            evidence = f.get("evidence", {}) or {}
+            if evidence.get("scoring_impact") != "none":
+                score -= SEVERITY_DEDUCTIONS[sev]
     if score < 0:
         score = 0
     return score, counts
