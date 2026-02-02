@@ -1,9 +1,9 @@
-
-
 # --- Security Questions Setup & Account Recovery ---
+from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from pydantic import BaseModel
 
 # Place these after router definition
+# (Removed duplicate router definition here)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -60,7 +60,6 @@ async def recover_account(payload: RecoveryRequest):
     await AuditRepository().create_event(actor_id=str(user.id), action="recover_account", target_type="user", target_id=str(user.id))
     return {"msg": "Account recovered and password reset"}
 
-from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from ...schemas.user import UserCreate, Token, LoginRequest, ForgotPasswordRequest
 from ...services.auth_service import AuthService
 from ...repositories.users import UserRepository
@@ -69,8 +68,7 @@ from ...api.v1.deps import get_current_user
 from datetime import timedelta, datetime
 import os
 
-router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
-
+# Cookie/session config (ensure these are defined before use)
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
