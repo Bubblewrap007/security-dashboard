@@ -95,6 +95,11 @@ export default function Scans(){
                   <span title="Queued = waiting for worker. Running = in progress. Completed = finished.">Status: {s.status}</span>
                   <span title="Score is a 0–100 summary of findings severity."> | Score: {s.score ?? 'N/A'}</span>
                 </div>
+                {s.status === 'failed' && (
+                  <div className="text-xs text-red-600 mt-1">
+                    Scan failed to start. {s.error_message ? `Reason: ${s.error_message}` : 'Please try again or contact support.'}
+                  </div>
+                )}
                 <div className="text-xs text-gray-500">Assets: {(s.asset_ids || []).map(id => assetMap.get(id) || id).join(', ')}</div>
               </div>
               <div className="flex items-center space-x-3">

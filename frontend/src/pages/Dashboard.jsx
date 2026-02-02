@@ -82,11 +82,7 @@ export default function Dashboard(){
           }))
           setData(chart)
         } else {
-          setData([
-            {name: 'All time', score: 58, trend: 58, average: 65},
-            {name: 'Last 30 days', score: 65, trend: 65, average: 65},
-            {name: 'Last 7 days', score: 72, trend: 72, average: 65}
-          ])
+          setData(null)
         }
       }
       const assetsRes = await apiFetch(`/api/v1/assets`, { credentials: 'include' })
