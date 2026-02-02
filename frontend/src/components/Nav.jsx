@@ -9,6 +9,7 @@ export default function Nav({ onStartWalkthrough }){
   const [backendHealthy, setBackendHealthy] = useState(null)
   const [darkMode, setDarkMode] = useState(false)
   const location = useLocation()
+  const feedbackUrl = import.meta.env.VITE_FEEDBACK_URL || 'https://docs.google.com/forms/d/e/1FAIpQLSc4QSvesrQOFzhdt-WyWipZ9uCabAGJCUPBMzPSlw_JEfvwvg/viewform?usp=publish-editor'
 
   const handleSignout = async () => {
     try {
@@ -88,6 +89,14 @@ export default function Nav({ onStartWalkthrough }){
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="flex items-center space-x-3">
           <button onClick={onStartWalkthrough} className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 px-2 py-1 rounded">Help</button>
+          <a
+            href={feedbackUrl}
+            className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 px-2 py-1 rounded"
+            target={feedbackUrl.startsWith('http') ? '_blank' : undefined}
+            rel={feedbackUrl.startsWith('http') ? 'noreferrer' : undefined}
+          >
+            Feedback
+          </a>
         </div>
         <div className="flex-1 flex justify-center items-center space-x-2">
           <img src="/shield-logo.svg" alt="Shield" className="w-6 h-6 drop-shadow-lg" />

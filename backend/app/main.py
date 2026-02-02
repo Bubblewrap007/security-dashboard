@@ -14,8 +14,11 @@ def _get_cors_origins():
     env_origins = os.getenv("CORS_ORIGINS", "").strip()
     if env_origins:
         return [o.strip() for o in env_origins.split(",") if o.strip()]
+    explicit_frontend = os.getenv("FRONTEND_URL", "").strip()
+    explicit_vite_frontend = os.getenv("VITE_FRONTEND_URL", "").strip()
+    extra_origins = [o for o in [explicit_frontend, explicit_vite_frontend] if o]
     if ENV == "production":
-        return [
+        origins = [
             "https://atlanticitsupport.com",
             "https://www.atlanticitsupport.com",
             "https://dashboard.atlanticitsupport.com",
@@ -23,7 +26,15 @@ def _get_cors_origins():
             "https://security-dashboard-frontend-production.up.railway.app",
             "https://frontend-production-9f68.up.railway.app"
         ]
-    return ["http://localhost:5173", "http://localhost", "http://localhost:80"]
+        for origin in extra_origins:
+            if origin not in origins:
+                origins.append(origin)
+        return origins
+    origins = ["http://localhost:5173", "http://localhost", "http://localhost:80"]
+    for origin in extra_origins:
+        if origin not in origins:
+            origins.append(origin)
+    return origins
 
 origins = _get_cors_origins()
 app.add_middleware(
