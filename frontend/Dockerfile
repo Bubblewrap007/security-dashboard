@@ -2,7 +2,7 @@
 
 FROM node:18-alpine as builder
 WORKDIR /app
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 # Ensure a clean install to prevent duplicate React
 RUN rm -rf node_modules package-lock.json
 RUN npm install --legacy-peer-deps --no-audit --no-fund
