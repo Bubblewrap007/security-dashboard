@@ -6,6 +6,26 @@ from datetime import datetime
 
 
 class UserRepository:
+        async def set_security_questions(self, user_id: str, questions: list):
+            """Set security questions and hashed answers for a user. Expects list of dicts: [{question, answer}]"""
+            from ..core.security import get_password_hash
+            hashed = [{"question": q["question"], "answer_hash": get_password_hash(q["answer"])} for q in questions]
+            await self._col.update_one({"_id": ObjectId(user_id)}, {"$set": {"security_questions": hashed}})
+            return await self.get_by_id(user_id)
+
+        async def verify_security_answers(self, user_id: str, answers: list) -> bool:
+            """Verify provided answers against stored hashes. Expects list of dicts: [{question, answer}]"""
+            user = await self.get_by_id(user_id)
+            if not user or not getattr(user, "security_questions", None):
+                return False
+            from ..core.security import verify_password
+            stored = {q["question"]: q["answer_hash"] for q in user.security_questions}
+            for ans in answers:
+                q = ans["question"]
+                a = ans["answer"]
+                if q not in stored or not verify_password(a, stored[q]):
+                    return False
+            return True
     def __init__(self, db_client=None):
         self._client = db_client or get_db()
         self._db = get_database()

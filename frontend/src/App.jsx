@@ -17,6 +17,9 @@ import Account from './pages/Account'
 import Feedback from './pages/Feedback'
 import Walkthrough, { shouldShowWalkthrough } from './components/Walkthrough'
 import ErrorBoundary from './components/ErrorBoundary'
+import TermsOfService from './pages/TermsOfService'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import RecoverAccount from './pages/RecoverAccount'
 
 function AppShell() {
   const location = useLocation()
@@ -171,6 +174,9 @@ function AppShell() {
         <Route path="/scans/:id" element={<ScanDetails/>} />
         <Route path="/feedback" element={<Feedback/>} />
         <Route path="/admin" element={<Admin/>} />
+        <Route path="/terms-of-service" element={<TermsOfService/>} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy/>} />
+        <Route path="/recover-account" element={<RecoverAccount/>} />
       </Routes>
     </>
   )
