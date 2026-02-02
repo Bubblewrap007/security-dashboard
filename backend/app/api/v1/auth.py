@@ -65,7 +65,6 @@ from ...schemas.user import UserCreate, Token, LoginRequest, ForgotPasswordReque
 from ...services.auth_service import AuthService
 from ...repositories.users import UserRepository
 from ...core.security import create_access_token, decode_access_token
-
 from datetime import timedelta, datetime
 import os
 
