@@ -98,7 +98,9 @@ export default function Nav({ onStartWalkthrough }){
         </div>
         <div className="flex-1 flex justify-center items-center space-x-2">
           <img src="/shield-logo.svg" alt="Shield" className="w-6 h-6 drop-shadow-lg" />
-          <Link to="/" className="font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">Security Dashboard</Link>
+          <Link to="/" className="font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">
+            Security Dashboard <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">(Beta)</span>
+          </Link>
           <div className="flex items-center text-xs text-gray-500 dark:text-gray-400" title="Backend service status">
             <span className={`inline-block w-2 h-2 rounded-full mr-2 ${backendHealthy === null ? 'bg-gray-300' : backendHealthy ? 'bg-green-500' : 'bg-red-500'}`} />
             {backendHealthy === null ? 'Checking…' : backendHealthy ? 'Online' : 'Offline'}

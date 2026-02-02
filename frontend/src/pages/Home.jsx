@@ -14,7 +14,7 @@ export default function Home({ onStartWalkthrough }) {
         <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
           <div>
             <h1 className="text-5xl font-bold text-gray-900 dark:text-cyber-blue mb-6 dark:drop-shadow-[0_0_15px_rgba(0,217,255,0.5)]">
-              Security Dashboard
+              Security Dashboard <span className="text-lg font-semibold text-gray-500 dark:text-gray-300">(Beta)</span>
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
               Comprehensive security monitoring and vulnerability assessment platform.
