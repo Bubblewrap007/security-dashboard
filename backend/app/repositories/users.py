@@ -1,3 +1,16 @@
+from typing import Optional
+from ..models.user import UserInDB
+from ..db.client import get_db, get_database
+from bson import ObjectId
+from datetime import datetime
+
+
+class UserRepository:
+    def __init__(self, db_client=None):
+        self._client = db_client or get_db()
+        self._db = get_database()
+        self._col = self._db.get_collection("users")
+
     async def get_email_breach_usage(self, user_id: str) -> tuple[int, str]:
         """Return (usage_count, usage_date) for daily email breach usage."""
         user = await self.get_by_id(user_id)
