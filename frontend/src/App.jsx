@@ -14,6 +14,7 @@ import Home from './pages/Home'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Account from './pages/Account'
+import Feedback from './pages/Feedback'
 import Walkthrough, { shouldShowWalkthrough } from './components/Walkthrough'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -168,6 +169,7 @@ function AppShell() {
         <Route path="/assets" element={<Assets/>} />
         <Route path="/scans" element={<Scans/>} />
         <Route path="/scans/:id" element={<ScanDetails/>} />
+        <Route path="/feedback" element={<Feedback/>} />
         <Route path="/admin" element={<Admin/>} />
       </Routes>
     </>
