@@ -1,3 +1,11 @@
+    async def get_email_breach_usage(self, user_id: str) -> tuple[int, str]:
+        """Return (usage_count, usage_date) for daily email breach usage."""
+        user = await self.get_by_id(user_id)
+        if not user:
+            return 0, ""
+        usage_date = getattr(user, "email_breach_usage_date", None)
+        usage_count = getattr(user, "email_breach_usage_count", 0) or 0
+        return usage_count, usage_date or ""
 from typing import Optional
 from ..models.user import UserInDB
 from ..db.client import get_db, get_database

@@ -87,8 +87,7 @@ def check_email_hibp(scan_id: str, asset_id: str, email: str) -> List[Dict]:
         data = r.json()
         findings.append(build_finding(scan_id, asset_id, "hibp:breach_found", "high", "Email found in breach feeds", {"breaches_count": len(data)}, "This email has been seen in public breaches; consider password resets and monitoring"))
     elif r.status_code == 404:
-        # no breach found
-        pass
+        findings.append(build_finding(scan_id, asset_id, "hibp:no_breach", "low", "No breaches detected for this email", {"email": email}, "No public breaches found for this email address."))
     else:
         findings.append(build_finding(scan_id, asset_id, "hibp:error", "low", "HIBP lookup error", {"status_code": r.status_code}, "Check HIBP API key and rate limits"))
     return findings
