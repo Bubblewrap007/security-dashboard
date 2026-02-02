@@ -1,6 +1,7 @@
 # --- Security Questions Setup & Account Recovery ---
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from pydantic import BaseModel
+from ...api.v1.deps import get_current_user
 
 # Place these after router definition
 # (Removed duplicate router definition here)
@@ -64,7 +65,7 @@ from ...schemas.user import UserCreate, Token, LoginRequest, ForgotPasswordReque
 from ...services.auth_service import AuthService
 from ...repositories.users import UserRepository
 from ...core.security import create_access_token, decode_access_token
-from ...api.v1.deps import get_current_user
+
 from datetime import timedelta, datetime
 import os
 
