@@ -42,10 +42,10 @@ Write-Host "`n✅ Backend URL: $backendUrl" -ForegroundColor Green
 # Prompt for frontend domain
 Write-Host "`n📋 STEP 2: Frontend Domain" -ForegroundColor Cyan
 Write-Host "================================`n" -ForegroundColor Cyan
-$frontendDomain = Read-Host "Enter your frontend domain (default: dashboard.atlanticitsupport.com)"
+$frontendDomain = Read-Host "Enter your frontend domain (default: securitydashboardapp.com)"
 
 if ([string]::IsNullOrWhiteSpace($frontendDomain)) {
-    $frontendDomain = "dashboard.atlanticitsupport.com"
+    $frontendDomain = "securitydashboardapp.com"
 }
 
 Write-Host "`n✅ Frontend domain: $frontendDomain" -ForegroundColor Green
@@ -90,6 +90,7 @@ railway variables set CORS_ORIGINS="https://$frontendDomain,https://atlanticitsu
 Run these commands after linking to frontend service (railway link):
 
 railway variables set VITE_API_URL="$backendUrl"
+railway variables set ENABLE_PROXY="false"
 
 ## MongoDB Service
 Make sure you have a MongoDB database added in Railway dashboard.
