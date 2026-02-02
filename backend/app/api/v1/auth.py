@@ -131,6 +131,10 @@ async def login(payload: LoginRequest, response: Response):
     # audit login (do not store password)
     user = res.get("user")
     if user:
+        try:
+            await UserRepository().clear_failed_logins(str(user.id))
+        except Exception:
+            pass
         await AuditRepository().create_event(actor_id=str(user.id), action="login", target_type="user", target_id=str(user.id), details={"username": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 

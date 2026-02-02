@@ -153,6 +153,9 @@ export default function ScanDetails(){
           </div>
           <div className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-4">
             <div className="text-sm font-semibold mb-2 text-slate-900 dark:text-white">Encrypt report (recommended for sharing)</div>
+            <div className="text-sm font-bold text-slate-900 dark:text-white mb-2">
+              Use a strong, unique password and store it safely. This password cannot be recovered.
+            </div>
             <div className="flex flex-col md:flex-row gap-2">
               <input
                 type="password"
@@ -160,6 +163,9 @@ export default function ScanDetails(){
                 className="border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 rounded w-full dark:text-white dark:placeholder-gray-400"
                 value={encryptPassword}
                 onChange={e => setEncryptPassword(e.target.value)}
+                autoComplete="new-password"
+                name="report_password"
+                spellCheck={false}
               />
               <button
                 onClick={downloadEncryptedReport}
