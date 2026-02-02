@@ -29,7 +29,7 @@ RUN echo '#!/bin/sh' > /start.sh && \
     echo '    try_files \$uri \$uri/ /index.html;' >> /start.sh && \
     echo '  }' >> /start.sh && \
     echo '  location /api/ {' >> /start.sh && \
-    echo '    proxy_pass ${BACKEND_URL}/api/;' >> /start.sh && \
+    echo "    proxy_pass ${BACKEND_URL}/api/;" >> /start.sh && \
     echo '    proxy_http_version 1.1;' >> /start.sh && \
     echo '    proxy_set_header Upgrade \$http_upgrade;' >> /start.sh && \
     echo '    proxy_set_header Connection "upgrade";' >> /start.sh && \
@@ -39,7 +39,7 @@ RUN echo '#!/bin/sh' > /start.sh && \
     echo '    proxy_set_header X-Forwarded-Proto \$scheme;' >> /start.sh && \
     echo '  }' >> /start.sh && \
     echo '  location /health {' >> /start.sh && \
-    echo '    proxy_pass ${BACKEND_URL}/health;' >> /start.sh && \
+    echo "    proxy_pass ${BACKEND_URL}/health;" >> /start.sh && \
     echo '  }' >> /start.sh && \
     echo '}' >> /start.sh && \
     echo 'EOF' >> /start.sh && \
