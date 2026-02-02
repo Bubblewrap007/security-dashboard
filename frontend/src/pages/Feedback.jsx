@@ -2,7 +2,7 @@ import React from 'react'
 import BackendStatusBanner from '../components/BackendStatusBanner'
 
 export default function Feedback() {
-  const feedbackUrl = import.meta.env.VITE_FEEDBACK_URL || 'https://docs.google.com/forms/d/e/1FAIpQLSc4QSvesrQOFzhdt-WyWipZ9uCabAGJCUPBMzPSlw_JEfvwvg/viewform?usp=publish-editor'
+  const feedbackUrl = import.meta.env.VITE_FEEDBACK_URL || 'https://forms.gle/YMJ8k6YWB26VQN3N8'
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-cyber-darker dark:via-cyber-dark dark:to-slate-900">
