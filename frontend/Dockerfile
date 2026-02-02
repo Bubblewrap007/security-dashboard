@@ -1,6 +1,6 @@
 # Build stage
 
-FROM node:18-alpine as builder
+FROM node:22-alpine as builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 # Ensure a clean install to prevent duplicate React
