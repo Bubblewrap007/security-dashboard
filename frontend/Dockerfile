@@ -4,8 +4,8 @@ FROM node:22-alpine as builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 # Ensure a clean install to prevent duplicate React
-RUN rm -rf node_modules package-lock.json
-RUN npm install --legacy-peer-deps --no-audit --no-fund
+RUN rm -rf node_modules
+RUN npm ci --no-audit --no-fund
 COPY . .
 # Build with environment variables
 ARG VITE_API_URL
