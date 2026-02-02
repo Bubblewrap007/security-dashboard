@@ -234,16 +234,25 @@ async def mfa_login_verify(payload: MFAVerifyRequest, response: Response):
     # Validate code
     from ...services.mfa_service import MFAService
     valid = False
+    # Standard MFA methods
     if payload.method == "totp":
         valid = MFAService.verify_totp(user.totp_secret, payload.code)
     elif payload.method == "email":
-        # Email code: get from temp codes
         code = await UserRepository().get_mfa_code(user_id)
         valid = MFAService.verify_email_code(code, payload.code, doc["created_at"])
     elif payload.method == "sms":
         code = await UserRepository().get_mfa_code(user_id)
         valid = MFAService.verify_phone_code(code, payload.code, doc["created_at"])
-    # TODO: Add backup code support
+    elif payload.method == "backup":
+        # Backup code support
+        codes = getattr(user, "mfa_backup_codes", [])
+        for h in codes:
+            if MFAService.verify_backup_code(payload.code, h):
+                valid = True
+                # Remove used backup code
+                codes.remove(h)
+                await UserRepository()._col.update_one({"_id": user.id}, {"$set": {"mfa_backup_codes": codes}})
+                break
     if not valid:
         raise HTTPException(status_code=401, detail="Invalid MFA code")
     # Success: issue session
