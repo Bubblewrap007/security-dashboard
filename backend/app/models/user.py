@@ -24,5 +24,7 @@ class UserInDB(BaseModel):
     github_username: Optional[str] = None
     last_login: Optional[datetime] = None
     timezone: Optional[str] = None
+    email_breach_usage_date: Optional[str] = None
+    email_breach_usage_count: int = 0
 
     model_config = ConfigDict(from_attributes=True, validate_by_name=True)

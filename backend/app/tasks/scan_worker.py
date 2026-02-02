@@ -6,8 +6,9 @@ from ..services.scanner import (
     check_email_hibp, check_spf, check_dmarc, check_dkim, check_security_headers, check_tls_cert,
     check_ipv4_connectivity, check_ipv4_ports,
     check_url_accessibility, check_url_security_headers, check_url_ssl_cert,
-    score_from_findings
+    score_from_findings, build_finding
 )
+from ..repositories.users import UserRepository
 from datetime import datetime
 import asyncio
 import os
@@ -17,6 +18,7 @@ async def _perform_scan_async(scan_id: str):
     scan_repo = ScanRepository()
     asset_repo = AssetRepository()
     findings_repo = FindingRepository()
+    user_repo = UserRepository()
 
     scan = await scan_repo.get(scan_id)
     if not scan:
@@ -31,6 +33,21 @@ async def _perform_scan_async(scan_id: str):
             continue
         assets_for_demo.append({"id": asset.id, "type": asset.type, "value": asset.value})
         if asset.type == "email":
+            hibp_key = os.getenv("HIBP_API_KEY")
+            limit = int(os.getenv("HIBP_DAILY_LIMIT", "2"))
+            if hibp_key and limit > 0:
+                count = await user_repo.increment_email_breach_usage(scan.user_id)
+                if count > limit:
+                    all_findings.append(build_finding(
+                        scan_id,
+                        aid,
+                        "hibp:limit_reached",
+                        "low",
+                        "Email breach lookup limit reached",
+                        {"limit": limit, "count": count},
+                        "Upgrade your plan to run more email breach checks."
+                    ))
+                    continue
             all_findings += check_email_hibp(scan_id, aid, asset.value)
         elif asset.type == "domain":
             # run domain checks

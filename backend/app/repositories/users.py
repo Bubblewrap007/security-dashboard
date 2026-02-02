@@ -2,6 +2,7 @@ from typing import Optional
 from ..models.user import UserInDB
 from ..db.client import get_db, get_database
 from bson import ObjectId
+from datetime import datetime
 
 
 class UserRepository:
@@ -64,6 +65,28 @@ class UserRepository:
     async def update_timezone(self, user_id: str, timezone: str):
         await self._col.update_one({"_id": ObjectId(user_id)}, {"$set": {"timezone": timezone}})
         return await self.get_by_id(user_id)
+
+    async def increment_email_breach_usage(self, user_id: str) -> int:
+        """Increment daily email breach usage counter and return new count."""
+        today = datetime.utcnow().date().isoformat()
+        user = await self.get_by_id(user_id)
+        if not user:
+            return 0
+
+        usage_date = getattr(user, "email_breach_usage_date", None)
+        usage_count = getattr(user, "email_breach_usage_count", 0) or 0
+
+        if usage_date != today:
+            usage_count = 0
+
+        usage_count += 1
+
+        await self._col.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"email_breach_usage_date": today, "email_breach_usage_count": usage_count}}
+        )
+
+        return usage_count
 
     async def increment_failed_login(self, user_id: str) -> int:
         """Increment failed login attempts and return new count."""
