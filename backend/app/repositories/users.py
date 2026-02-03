@@ -6,6 +6,48 @@ from datetime import datetime
 
 
 class UserRepository:
+    async def set_security_questions(self, user_id: str, questions: list):
+        """Set security questions and hashed answers for a user. Expects list of dicts: [{question, answer}]"""
+        from ..core.security import get_password_hash
+        hashed = [{"question": q["question"], "answer_hash": get_password_hash(q["answer"])} for q in questions]
+        await self._col.update_one({"_id": ObjectId(user_id)}, {"$set": {"security_questions": hashed}})
+        return await self.get_by_id(user_id)
+
+    async def verify_security_answers(self, user_id: str, answers: list) -> bool:
+        """Verify provided answers against stored hashes. Expects list of dicts: [{question, answer}]"""
+        user = await self.get_by_id(user_id)
+        if not user or not getattr(user, "security_questions", None):
+            return False
+        from ..core.security import verify_password
+        stored = {q["question"]: q["answer_hash"] for q in user.security_questions}
+        for ans in answers:
+            q = ans["question"]
+            a = ans["answer"]
+            if q not in stored or not verify_password(a, stored[q]):
+                return False
+        return True
+
+    def __init__(self, db_client=None):
+        self._client = db_client or get_db()
+        self._db = get_database()
+        self._col = self._db.get_collection("users")
+
+    async def get_email_breach_usage(self, user_id: str) -> tuple[int, str]:
+        """Return (usage_count, usage_date) for daily email breach usage."""
+        user = await self.get_by_id(user_id)
+        if not user:
+            return 0, ""
+        usage_date = getattr(user, "email_breach_usage_date", None)
+        usage_count = getattr(user, "email_breach_usage_count", 0) or 0
+        return usage_count, usage_date or ""
+from typing import Optional
+from ..models.user import UserInDB
+from ..db.client import get_db, get_database
+from bson import ObjectId
+from datetime import datetime
+
+
+class UserRepository:
     def __init__(self, db_client=None):
         self._client = db_client or get_db()
         self._db = get_database()

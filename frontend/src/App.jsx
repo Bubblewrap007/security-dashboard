@@ -1,126 +1,129 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import React, { useEffect, useState, useRef } from 'react'
-import { apiFetch } from './utils/api'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Assets from './pages/Assets'
-import Scans from './pages/Scans'
-import ScanDetails from './pages/ScanDetails'
-import Nav from './components/Nav'
-import Admin from './pages/Admin'
-import Register from './pages/Register'
-import VerifyEmail from './pages/VerifyEmail'
-import Home from './pages/Home'
-import ForgotPassword from './pages/ForgotPassword'
-import ResetPassword from './pages/ResetPassword'
-import Account from './pages/Account'
-import Feedback from './pages/Feedback'
-import Walkthrough, { shouldShowWalkthrough } from './components/Walkthrough'
-import ErrorBoundary from './components/ErrorBoundary'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { apiFetch } from './utils/api';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Assets from './pages/Assets';
+import Scans from './pages/Scans';
+import ScanDetails from './pages/ScanDetails';
+import Nav from './components/Nav';
+import Admin from './pages/Admin';
+import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
+import Home from './pages/Home';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import Account from './pages/Account';
+import Feedback from './pages/Feedback';
+import Walkthrough, { shouldShowWalkthrough } from './components/Walkthrough';
+import ErrorBoundary from './components/ErrorBoundary';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import RecoverAccount from './pages/RecoverAccount';
 
 function AppShell() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const [showWalkthrough, setShowWalkthrough] = useState(false)
-  const [showIdleWarning, setShowIdleWarning] = useState(false)
-  const [idleSecondsLeft, setIdleSecondsLeft] = useState(60)
-  const idleTimers = useRef({ warning: null, logout: null, countdown: null })
-  const sessionCloseKey = 'sd_last_closed_at'
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [showIdleWarning, setShowIdleWarning] = useState(false);
+  const [idleSecondsLeft, setIdleSecondsLeft] = useState(60);
+  const idleTimers = useRef({ warning: null, logout: null, countdown: null });
+  const sessionCloseKey = 'sd_last_closed_at';
 
   const isProtectedRoute = (path) => {
-    const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email']
-    return !publicPaths.includes(path)
-  }
+    const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
+    return !publicPaths.includes(path);
+  };
 
   const clearIdleTimers = () => {
-    if (idleTimers.current.warning) clearTimeout(idleTimers.current.warning)
-    if (idleTimers.current.logout) clearTimeout(idleTimers.current.logout)
-    if (idleTimers.current.countdown) clearInterval(idleTimers.current.countdown)
-  }
+    if (idleTimers.current.warning) clearTimeout(idleTimers.current.warning);
+    if (idleTimers.current.logout) clearTimeout(idleTimers.current.logout);
+    if (idleTimers.current.countdown) clearInterval(idleTimers.current.countdown);
+  };
 
   const scheduleIdleTimers = () => {
-    clearIdleTimers()
-    setShowIdleWarning(false)
-    setIdleSecondsLeft(60)
+    clearIdleTimers();
+    setShowIdleWarning(false);
+    setIdleSecondsLeft(60);
 
-    const warningMs = 14 * 60 * 1000
-    const logoutMs = 15 * 60 * 1000
+    const warningMs = 14 * 60 * 1000;
+    const logoutMs = 15 * 60 * 1000;
 
     idleTimers.current.warning = setTimeout(() => {
-      setShowIdleWarning(true)
-      let remaining = 60
-      setIdleSecondsLeft(remaining)
+      setShowIdleWarning(true);
+      let remaining = 60;
+      setIdleSecondsLeft(remaining);
       idleTimers.current.countdown = setInterval(() => {
-        remaining -= 1
-        setIdleSecondsLeft(remaining)
+        remaining -= 1;
+        setIdleSecondsLeft(remaining);
         if (remaining <= 0) {
-          clearIdleTimers()
+          clearIdleTimers();
         }
-      }, 1000)
-    }, warningMs)
+      }, 1000);
+    }, warningMs);
 
     idleTimers.current.logout = setTimeout(async () => {
-      clearIdleTimers()
-      setShowIdleWarning(false)
-      await apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' })
-      navigate('/login?message=idle-timeout')
-    }, logoutMs)
-  }
+      clearIdleTimers();
+      setShowIdleWarning(false);
+      await apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+      navigate('/login?message=idle-timeout');
+    }, logoutMs);
+  };
 
   useEffect(() => {
-    const lastClosed = localStorage.getItem(sessionCloseKey)
+    const lastClosed = localStorage.getItem(sessionCloseKey);
     if (lastClosed) {
-      const elapsedMs = Date.now() - Number(lastClosed)
+      const elapsedMs = Date.now() - Number(lastClosed);
       if (!Number.isNaN(elapsedMs) && elapsedMs >= 60 * 1000) {
         apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' }).finally(() => {
-          localStorage.removeItem(sessionCloseKey)
+          localStorage.removeItem(sessionCloseKey);
           if (isProtectedRoute(location.pathname)) {
-            navigate('/login')
+            navigate('/login');
           }
-        })
+        });
       }
     }
 
     const handleBeforeUnload = () => {
-      localStorage.setItem(sessionCloseKey, String(Date.now()))
-    }
+      localStorage.setItem(sessionCloseKey, String(Date.now()));
+    };
 
-    window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-    }
-  }, [location.pathname])
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!isProtectedRoute(location.pathname)) {
-      clearIdleTimers()
-      setShowIdleWarning(false)
-      return
+      clearIdleTimers();
+      setShowIdleWarning(false);
+      return;
     }
 
     const handleActivity = () => {
-      scheduleIdleTimers()
-    }
+      scheduleIdleTimers();
+    };
 
-    scheduleIdleTimers()
-    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
-    events.forEach(evt => window.addEventListener(evt, handleActivity))
-    document.addEventListener('visibilitychange', handleActivity)
+    scheduleIdleTimers();
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach(evt => window.addEventListener(evt, handleActivity));
+    document.addEventListener('visibilitychange', handleActivity);
 
     return () => {
-      events.forEach(evt => window.removeEventListener(evt, handleActivity))
-      document.removeEventListener('visibilitychange', handleActivity)
-      clearIdleTimers()
-    }
-  }, [location.pathname])
+      events.forEach(evt => window.removeEventListener(evt, handleActivity));
+      document.removeEventListener('visibilitychange', handleActivity);
+      clearIdleTimers();
+    };
+  }, [location.pathname]);
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search)
-    const forceTour = params.get('tour') === '1'
+    const params = new URLSearchParams(location.search);
+    const forceTour = params.get('tour') === '1';
     if (forceTour || shouldShowWalkthrough()) {
-      setShowWalkthrough(true)
+      setShowWalkthrough(true);
     }
-  }, [location.search])
+  }, [location.search]);
 
   return (
     <>
@@ -135,9 +138,9 @@ function AppShell() {
               <button
                 className="px-4 py-2 rounded bg-slate-200 dark:bg-slate-700"
                 onClick={() => {
-                  clearIdleTimers()
-                  setShowIdleWarning(false)
-                  scheduleIdleTimers()
+                  clearIdleTimers();
+                  setShowIdleWarning(false);
+                  scheduleIdleTimers();
                 }}
               >
                 Stay signed in
@@ -145,10 +148,10 @@ function AppShell() {
               <button
                 className="px-4 py-2 rounded bg-red-600 text-white"
                 onClick={async () => {
-                  clearIdleTimers()
-                  setShowIdleWarning(false)
-                  await apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' })
-                  navigate('/login?message=idle-timeout')
+                  clearIdleTimers();
+                  setShowIdleWarning(false);
+                  await apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+                  navigate('/login?message=idle-timeout');
                 }}
               >
                 Sign out now
@@ -159,21 +162,24 @@ function AppShell() {
       )}
       <Routes>
         <Route path="/" element={<Home onStartWalkthrough={() => setShowWalkthrough(true)} />} />
-        <Route path="/login" element={<Login/>} />
-        <Route path="/forgot-password" element={<ForgotPassword/>} />
-        <Route path="/reset-password" element={<ResetPassword/>} />
-        <Route path="/register" element={<Register/>} />
-        <Route path="/verify-email" element={<VerifyEmail/>} />
-        <Route path="/dashboard" element={<Dashboard/>} />
-        <Route path="/account" element={<Account/>} />
-        <Route path="/assets" element={<Assets/>} />
-        <Route path="/scans" element={<Scans/>} />
-        <Route path="/scans/:id" element={<ScanDetails/>} />
-        <Route path="/feedback" element={<Feedback/>} />
-        <Route path="/admin" element={<Admin/>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/account" element={<Account />} />
+        <Route path="/assets" element={<Assets />} />
+        <Route path="/scans" element={<Scans />} />
+        <Route path="/scans/:id" element={<ScanDetails />} />
+        <Route path="/feedback" element={<Feedback />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/recover-account" element={<RecoverAccount />} />
       </Routes>
     </>
-  )
+  );
 }
 
 export default function App() {
@@ -183,5 +189,5 @@ export default function App() {
         <AppShell />
       </ErrorBoundary>
     </BrowserRouter>
-  )
+  );
 }

@@ -52,6 +52,7 @@ async def start_scan(payload: ScanBase, user_id: str = Depends(get_current_user_
 async def get_scan(scan_id: str, user_id: str = Depends(get_current_user_id)):
     scan_repo = ScanRepository()
     scan = await scan_repo.get(scan_id)
+    from ...repositories.users import UserRepository
     if not scan:
         raise HTTPException(status_code=404, detail="Scan not found")
     # allow owner only (superuser checks are not used in tests)
@@ -71,6 +72,16 @@ async def get_findings(scan_id: str, user_id: str = Depends(get_current_user_id)
     fr = FindingRepository()
     findings = await fr.list_by_scan(scan_id)
     return [f.model_dump() for f in findings]
+
+@router.get("/email-breach-usage")
+async def get_email_breach_usage(user_id: str = Depends(get_current_user_id)):
+    """Return the user's current daily email breach usage and limit."""
+    from ...repositories.users import UserRepository
+    user_repo = UserRepository()
+    usage_count, usage_date = await user_repo.get_email_breach_usage(user_id)
+    limit = int(os.getenv("HIBP_DAILY_LIMIT", "2"))
+    today = usage_date
+    return {"count": usage_count, "limit": limit, "date": today}
 
 @router.get("/{scan_id}/report")
 async def get_report(scan_id: str, user_id: str = Depends(get_current_user_id)):

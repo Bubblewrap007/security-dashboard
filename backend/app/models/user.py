@@ -22,9 +22,13 @@ class UserInDB(BaseModel):
     totp_secret: Optional[str] = None
     phone_number: Optional[str] = None
     github_username: Optional[str] = None
+
     last_login: Optional[datetime] = None
     timezone: Optional[str] = None
     email_breach_usage_date: Optional[str] = None
     email_breach_usage_count: int = 0
+
+    # Security questions for account recovery
+    security_questions: list = []  # List of dicts: [{"question": str, "answer_hash": str}]
 
     model_config = ConfigDict(from_attributes=True, validate_by_name=True)

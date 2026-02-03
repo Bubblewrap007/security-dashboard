@@ -38,15 +38,7 @@ async def _perform_scan_async(scan_id: str):
             if hibp_key and limit > 0:
                 count = await user_repo.increment_email_breach_usage(scan.user_id)
                 if count > limit:
-                    all_findings.append(build_finding(
-                        scan_id,
-                        aid,
-                        "hibp:limit_reached",
-                        "low",
-                        "Email breach lookup limit reached",
-                        {"limit": limit, "count": count},
-                        "Upgrade your plan to run more email breach checks."
-                    ))
+                    # Instead of adding a finding, just skip scanning
                     continue
             all_findings += check_email_hibp(scan_id, aid, asset.value)
         elif asset.type == "domain":

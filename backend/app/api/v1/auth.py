@@ -1,14 +1,74 @@
+# --- Security Questions Setup & Account Recovery ---
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
+from pydantic import BaseModel
+from ...api.v1.deps import get_current_user
+
+# Place these after router definition
+# (Removed duplicate router definition here)
+
+router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+
+class SecurityQuestionSetRequest(BaseModel):
+    questions: list  # [{"question": str, "answer": str}]
+
+@router.post("/security-questions/set")
+async def set_security_questions(payload: SecurityQuestionSetRequest, current_user=Depends(get_current_user)):
+    """Set or update security questions for the current user."""
+    await UserRepository().set_security_questions(current_user.id, payload.questions)
+    await AuditRepository().create_event(actor_id=str(current_user.id), action="set_security_questions", target_type="user", target_id=str(current_user.id))
+    return {"msg": "Security questions updated"}
+
+class RecoveryRequest(BaseModel):
+    identifier: str  # username or email
+    questions: list  # [{"question": str, "answer": str}]
+    backup_code: str = None
+    email_code: str = None
+    new_password: str
+
+@router.post("/recover-account")
+async def recover_account(payload: RecoveryRequest):
+    """Recover account by verifying security questions and backup/email code, then reset password."""
+    # Find user
+    repo = UserRepository()
+    user = await repo.get_by_email(payload.identifier) or await repo.get_by_username(payload.identifier)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    # Verify security questions
+    if not await repo.verify_security_answers(user.id, payload.questions):
+        raise HTTPException(status_code=401, detail="Security answers incorrect")
+    # Verify backup code or email code
+    backup_ok = False
+    if payload.backup_code:
+        # Check backup code
+        codes = getattr(user, "mfa_backup_codes", [])
+        from ...services.mfa_service import MFAService
+        for h in codes:
+            if MFAService.verify_backup_code(h, payload.backup_code):
+                backup_ok = True
+                break
+    if payload.email_code:
+        # Check email code (reuse get_mfa_code logic)
+        code = await repo.get_mfa_code(user.id)
+        from ...services.mfa_service import MFAService
+        if MFAService.verify_email_code(code, payload.email_code, __import__('datetime').datetime.utcnow()):
+            backup_ok = True
+    if not backup_ok:
+        raise HTTPException(status_code=401, detail="Backup or email code incorrect")
+    # Set new password
+    from ...core.security import get_password_hash
+    new_hash = get_password_hash(payload.new_password)
+    await repo.update_password(user.id, new_hash)
+    await AuditRepository().create_event(actor_id=str(user.id), action="recover_account", target_type="user", target_id=str(user.id))
+    return {"msg": "Account recovered and password reset"}
+
 from ...schemas.user import UserCreate, Token, LoginRequest, ForgotPasswordRequest
 from ...services.auth_service import AuthService
 from ...repositories.users import UserRepository
 from ...core.security import create_access_token, decode_access_token
-from ...api.v1.deps import get_current_user
-from datetime import timedelta
+from datetime import timedelta, datetime
 import os
 
-router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
-
+# Cookie/session config (ensure these are defined before use)
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
@@ -103,7 +163,7 @@ async def resend_verification_email(request: Request, current_user = Depends(get
         logging.getLogger('app.auth').error(f"Error resending verification email: {e}")
         return {"message": "Unable to resend verification email"}
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=dict)
 async def login(payload: LoginRequest, response: Response):
     service = AuthService(UserRepository())
     res = await service.authenticate(payload.identifier, payload.password)
@@ -113,9 +173,21 @@ async def login(payload: LoginRequest, response: Response):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     if res.get("status") == "locked":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account locked. Check your email to unlock or wait 15 minutes.")
+    user = res.get("user")
+    if user and getattr(user, "mfa_enabled", False):
+        # MFA required: issue temp token (not session) and return mfa_required
+        from secrets import token_urlsafe
+        temp_token = token_urlsafe(32)
+        # Store temp_token in a temp collection with user_id and expiry (5 min)
+        temp_col = UserRepository()._db.get_collection("mfa_login_temp")
+        await temp_col.insert_one({
+            "user_id": str(user.id),
+            "temp_token": temp_token,
+            "created_at": datetime.utcnow()
+        })
+        return {"mfa_required": True, "temp_token": temp_token, "mfa_method": user.mfa_method}
+    # No MFA: issue session
     access_token = res["access_token"]
-    # set cookie
-    # Avoid marking cookie as Secure when running tests under HTTP so test client will send it
     cookie_secure = COOKIE_SECURE and not _is_testing_env()
     response.set_cookie(
         key="access_token",
@@ -126,16 +198,78 @@ async def login(payload: LoginRequest, response: Response):
         max_age=None if COOKIE_SESSION_ONLY else ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path='/'
     )
-    import logging
     logging.getLogger('app.auth').debug('cookie set: secure=%s header=%s', cookie_secure, response.headers.get('set-cookie'))
-    # audit login (do not store password)
-    user = res.get("user")
     if user:
         try:
             await UserRepository().clear_failed_logins(str(user.id))
         except Exception:
             pass
         await AuditRepository().create_event(actor_id=str(user.id), action="login", target_type="user", target_id=str(user.id), details={"username": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+from pydantic import BaseModel
+class MFAVerifyRequest(BaseModel):
+    temp_token: str
+    code: str
+    method: str
+    remember_device: bool = False
+
+@router.post("/login/mfa-verify", response_model=dict)
+async def mfa_login_verify(payload: MFAVerifyRequest, response: Response):
+    # Look up temp_token
+    temp_col = UserRepository()._db.get_collection("mfa_login_temp")
+    doc = await temp_col.find_one({"temp_token": payload.temp_token})
+    if not doc:
+        raise HTTPException(status_code=401, detail="Invalid or expired MFA session")
+    user_id = doc["user_id"]
+    user = await UserRepository().get_by_id(user_id)
+    if not user or not user.mfa_enabled:
+        raise HTTPException(status_code=401, detail="MFA not enabled or user not found")
+    # Check expiry (5 min)
+    if (datetime.utcnow() - doc["created_at"]).total_seconds() > 300:
+        await temp_col.delete_one({"temp_token": payload.temp_token})
+        raise HTTPException(status_code=401, detail="MFA session expired")
+    # Validate code
+    from ...services.mfa_service import MFAService
+    valid = False
+    # Standard MFA methods
+    if payload.method == "totp":
+        valid = MFAService.verify_totp(user.totp_secret, payload.code)
+    elif payload.method == "email":
+        code = await UserRepository().get_mfa_code(user_id)
+        valid = MFAService.verify_email_code(code, payload.code, doc["created_at"])
+    elif payload.method == "sms":
+        code = await UserRepository().get_mfa_code(user_id)
+        valid = MFAService.verify_phone_code(code, payload.code, doc["created_at"])
+    elif payload.method == "backup":
+        # Backup code support
+        codes = getattr(user, "mfa_backup_codes", [])
+        for h in codes:
+            if MFAService.verify_backup_code(payload.code, h):
+                valid = True
+                # Remove used backup code
+                codes.remove(h)
+                await UserRepository()._col.update_one({"_id": user.id}, {"$set": {"mfa_backup_codes": codes}})
+                break
+    if not valid:
+        raise HTTPException(status_code=401, detail="Invalid MFA code")
+    # Success: issue session
+    # If remember_device is True, set a 30-day expiry, else use default
+    from datetime import timedelta
+    token_expiry = timedelta(days=30) if payload.remember_device else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(subject=str(user.id), expires_delta=token_expiry)
+    cookie_secure = COOKIE_SECURE and not _is_testing_env()
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=cookie_secure,
+        samesite=COOKIE_SAMESITE,
+        max_age=30*24*60*60 if payload.remember_device else (None if COOKIE_SESSION_ONLY else ACCESS_TOKEN_EXPIRE_MINUTES * 60),
+        path='/'
+    )
+    await temp_col.delete_one({"temp_token": payload.temp_token})
+    await AuditRepository().create_event(actor_id=str(user.id), action="login_mfa", target_type="user", target_id=str(user.id), details={"username": user.username, "mfa_method": payload.method})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/unlock-account")

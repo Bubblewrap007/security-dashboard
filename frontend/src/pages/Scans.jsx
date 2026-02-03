@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react'
+import Modal from '../components/Modal'
 import { Link } from 'react-router-dom'
 import BackendStatusBanner from '../components/BackendStatusBanner'
 import { apiFetch } from '../utils/api'
@@ -7,12 +8,21 @@ export default function Scans(){
   const [assets, setAssets] = useState([])
   const [selectedAssetId, setSelectedAssetId] = useState('')
   const [scans, setScans] = useState([])
+  const [breachUsage, setBreachUsage] = useState({count: 0, limit: 2, date: ''})
+  const [showConfirm, setShowConfirm] = useState(false)
 
   async function fetchAssets(){
     const res = await apiFetch(`/api/v1/assets`, {credentials: 'include'})
     if(res.ok){ setAssets(await res.json()) }
   }
-  useEffect(()=>{fetchAssets(); fetchScans()},[])
+  useEffect(()=>{
+    fetchAssets(); fetchScans(); fetchBreachUsage();
+  },[])
+
+  async function fetchBreachUsage() {
+    const res = await apiFetch('/api/v1/scans/email-breach-usage', {credentials: 'include'})
+    if(res.ok) setBreachUsage(await res.json())
+  }
 
   const assetMap = React.useMemo(() => {
     const map = new Map()
@@ -22,6 +32,13 @@ export default function Scans(){
 
   async function startScan(){
     if(!selectedAssetId) return
+    await fetchBreachUsage();
+    if(breachUsage.count >= breachUsage.limit) return;
+    setShowConfirm(true);
+  }
+
+  async function confirmScan() {
+    setShowConfirm(false);
     const res = await apiFetch(`/api/v1/scans`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -31,6 +48,7 @@ export default function Scans(){
     if(res.ok){
       setSelectedAssetId('')
       fetchScans()
+      fetchBreachUsage()
     }
   }
 
@@ -45,6 +63,10 @@ export default function Scans(){
     const res = await apiFetch(`/api/v1/scans/${scanId}`, {method: 'DELETE', credentials: 'include'})
     if(res.ok){ fetchScans() }
   }
+
+  // Find the selected asset type
+  const selectedAsset = assets.find(a => a.id === selectedAssetId);
+  const isEmailSelected = selectedAsset && selectedAsset.type === 'email';
 
   return (
     <div className="p-8">
@@ -72,7 +94,32 @@ export default function Scans(){
         </div>
         <div className="text-xs text-gray-500 mt-2">Tip: Run separate scans if you want results per asset.</div>
         <div className="flex items-center gap-3 mt-4">
-          <button onClick={startScan} disabled={!selectedAssetId} className="bg-green-600 text-white px-3 py-1 rounded disabled:opacity-50 hover:bg-green-700">Start Scan</button>
+          <button
+            onClick={startScan}
+            disabled={
+              !selectedAssetId ||
+              (isEmailSelected && breachUsage.count >= breachUsage.limit)
+            }
+            className="bg-green-600 text-white px-3 py-1 rounded disabled:opacity-50 hover:bg-green-700"
+          >
+            Start Scan
+          </button>
+          {isEmailSelected && breachUsage.count >= breachUsage.limit && (
+            <span className="text-xs text-red-600 ml-2">You have reached your daily email breach scan limit ({breachUsage.limit}). Upgrade your plan to unlock more scans.</span>
+          )}
+                <Modal
+                  open={showConfirm}
+                  onClose={()=>setShowConfirm(false)}
+                  title="Confirm Scan"
+                  confirmText="Start Scan"
+                  onConfirm={confirmScan}
+                >
+                  <div>
+                    <div className="mb-2">You have a limit of {breachUsage.limit} email breach scans per day on the free plan.</div>
+                    <div className="mb-2">You have used {breachUsage.count} out of {breachUsage.limit} scans today.</div>
+                    <div>Upgrade your plan to unlock unlimited scans.</div>
+                  </div>
+                </Modal>
           <button onClick={fetchScans} className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" title="Refresh scan list">🔄 Refresh</button>
           {scans.some(s => s.status === 'queued') && (
             <span className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold">💡 Scans queued - refresh to check status</span>

@@ -11,12 +11,18 @@ export default function Register() {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
   const [verificationLink, setVerificationLink] = useState(null)
+  const [acceptTos, setAcceptTos] = useState(false)
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
     setSuccess(false)
     setVerificationLink(null)
+    if (!acceptTos || !acceptPrivacy) {
+      setError('You must accept the Terms of Service and Privacy Policy to register.')
+      return
+    }
     try {
       const res = await apiFetch(`/api/v1/auth/register`, {
         method: 'POST',
@@ -73,7 +79,15 @@ export default function Register() {
         <label className="block mb-4 dark:text-gray-300">Password
           <input type="password" className="w-full border px-3 py-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={password} onChange={e => setPassword(e.target.value)} required />
         </label>
-        <button className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white py-2 rounded font-semibold">Register</button>
+        <label className="block mb-4 text-sm dark:text-gray-300">
+          <input type="checkbox" className="mr-2" checked={acceptTos} onChange={e => setAcceptTos(e.target.checked)} />
+          I agree to the <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">Terms of Service</a>
+        </label>
+        <label className="block mb-4 text-sm dark:text-gray-300">
+          <input type="checkbox" className="mr-2" checked={acceptPrivacy} onChange={e => setAcceptPrivacy(e.target.checked)} />
+          I agree to the <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">Privacy Policy</a>
+        </label>
+        <button className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white py-2 rounded font-semibold" disabled={!acceptTos || !acceptPrivacy}>Register</button>
         <div className="mt-4 text-center text-sm dark:text-gray-300">
           Already have an account? <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:underline">Sign in</Link>
         </div>
