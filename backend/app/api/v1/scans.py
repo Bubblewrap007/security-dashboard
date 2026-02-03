@@ -75,15 +75,24 @@ async def get_findings(scan_id: str, user_id: str = Depends(get_current_user_id)
 @router.get("/{scan_id}/report")
 async def get_report(scan_id: str, user_id: str = Depends(get_current_user_id)):
     # Return a simple PDF report
+    import logging
     from ...utils.pdf import build_scan_pdf
     scan_repo = ScanRepository()
-    scan = await scan_repo.get(scan_id)
-    if not scan:
-        raise HTTPException(status_code=404, detail="Scan not found")
-    fr = FindingRepository()
-    findings = await fr.list_by_scan(scan_id)
-    pdf_bytes = build_scan_pdf(scan, findings)
-    return Response(content=pdf_bytes, media_type="application/pdf")
+    try:
+        scan = await scan_repo.get(scan_id)
+        if not scan:
+            logging.error(f"Scan not found: {scan_id}")
+            raise HTTPException(status_code=404, detail="Scan not found")
+        fr = FindingRepository()
+        findings = await fr.list_by_scan(scan_id)
+        if not findings:
+            logging.warning(f"No findings for scan {scan_id}")
+        pdf_bytes = build_scan_pdf(scan, findings)
+        headers = {"Content-Disposition": f"attachment; filename=scan-{scan_id}.pdf"}
+        return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
+    except Exception as e:
+        logging.exception(f"Error generating PDF for scan {scan_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate PDF report")
 
 @router.post("/{scan_id}/report-encrypted")
 async def get_report_encrypted(scan_id: str, request: Request, user_id: str = Depends(get_current_user_id)):
