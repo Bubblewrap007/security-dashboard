@@ -1,9 +1,10 @@
+
 # Python
 __pycache__/
 *.py[cod]
 *.pyo
 .env
-.env.*
+.env.production
 
 # Node
 node_modules/
@@ -24,3 +25,10 @@ docker-compose.override.yml
 # IDE
 .vscode/
 .idea/
+
+# Allow config files to be tracked
+!railway.json
+!railway-config.txt
+
+# Example env file for sharing structure (should be tracked)
+!.env.example
