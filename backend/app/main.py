@@ -24,7 +24,8 @@ def _get_cors_origins():
             "https://dashboard.atlanticitsupport.com",
             "https://securitydashboard.atlanticitsupport.com",
             "https://security-dashboard-frontend-production.up.railway.app",
-            "https://frontend-production-9f68.up.railway.app"
+            "https://frontend-production-9f68.up.railway.app",
+            "https://securitydashboardapp.com"
         ]
         for origin in extra_origins:
             if origin not in origins:
