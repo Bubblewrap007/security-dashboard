@@ -40,8 +40,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             logger.warning("Redis async client not available, skipping rate limiting")
             return await call_next(request)
 
-        if self.redis is None:
-            self.redis = redis.from_url(REDIS_URL)
+        try:
+            if self.redis is None:
+                self.redis = redis.from_url(REDIS_URL)
+        except Exception as e:
+            logging.getLogger("app.rate_limit").warning("Redis client init failed, skipping rate limiting: %s", e)
+            return await call_next(request)
         ip = request.client.host if request.client else "unknown"
         # use stricter limits for auth endpoints
         if request.url.path.startswith("/api/v1/auth"):
