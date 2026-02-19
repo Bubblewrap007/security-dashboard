@@ -16,8 +16,9 @@ RUN npm run build
 FROM nginx:1.25-alpine
 
 
-# Use static nginx config for direct API calls
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Use nginx config template (PORT substituted at runtime by Railway)
+COPY nginx.conf /etc/nginx/conf.d/default.conf.template
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-CMD ["nginx", "-g", "daemon off;"]
+# envsubst replaces ${PORT} in the template; default to 80 for local Docker
+CMD ["/bin/sh", "-c", "envsubst '$PORT' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
