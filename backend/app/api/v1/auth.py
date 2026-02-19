@@ -305,18 +305,10 @@ async def forgot_password(payload: ForgotPasswordRequest):
     return response
 
 @router.post("/reset-password")
-async def reset_password(payload):
+async def reset_password(payload: Request):
     from ...services.email_service import EmailService
-    from ...schemas.user import ResetPasswordRequest
-    
-    # Parse request body manually to get token and new_password
-    import json
-    body = await payload.body() if hasattr(payload, 'body') else payload
-    if isinstance(body, bytes):
-        data = json.loads(body)
-    else:
-        data = body
-    
+
+    data = await payload.json()
     token = data.get("token")
     new_password = data.get("new_password")
     

@@ -8,6 +8,7 @@ from ...core.security import decode_access_token
 from rq import Queue
 from redis import Redis
 import os
+import asyncio
 
 router = APIRouter(prefix="/api/v1/scans", tags=["scans"])
 
@@ -30,23 +31,45 @@ async def start_scan(payload: ScanBase, user_id: str = Depends(get_current_user_
     scan = await scan_repo.create(user_id, payload)
     # audit: scan created/queued
     await AuditRepository().create_event(actor_id=user_id, action="start_scan", target_type="scan", target_id=scan.id, details={"asset_ids": scan.asset_ids})
-    # enqueue job to worker
+    # enqueue job to worker using run_in_executor to avoid blocking the async event loop
     try:
         import warnings
-        r = Redis.from_url(REDIS_URL)
-        # The RQ internals unconditionally call `resolve_connection`, which emits
-        # a DeprecationWarning even when a `connection` is passed. Suppress that
-        # specific warning locally while we explicitly pass the connection.
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message=".*resolve_connection.*", category=DeprecationWarning)
-            q = Queue(connection=r)
-            q.enqueue("app.tasks.scan_worker.perform_scan", scan.id)
+        scan_id_to_enqueue = scan.id
+
+        def _enqueue():
+            r = Redis.from_url(REDIS_URL, socket_connect_timeout=5, socket_timeout=5)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message=".*resolve_connection.*", category=DeprecationWarning)
+                q = Queue(connection=r)
+                q.enqueue("app.tasks.scan_worker.perform_scan", scan_id_to_enqueue)
+
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, _enqueue)
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning("Redis unavailable, skipping enqueue: %s", str(e))
         await scan_repo.update_status(scan.id, "failed", error_message=str(e))
         return {"scan_id": scan.id, "status": "failed", "error": "Scan worker unavailable"}
     return {"scan_id": scan.id, "status": scan.status}
+
+# NOTE: specific routes (no path parameters) must be defined BEFORE parameterized routes
+# like /{scan_id}, otherwise they will be shadowed and never matched.
+
+@router.get("")
+async def list_scans(user_id: str = Depends(get_current_user_id)):
+    scan_repo = ScanRepository()
+    scans = await scan_repo.list_by_user(user_id)
+    return [s.model_dump() for s in scans]
+
+@router.get("/email-breach-usage")
+async def get_email_breach_usage(user_id: str = Depends(get_current_user_id)):
+    """Return the user's current daily email breach usage and limit."""
+    from ...repositories.users import UserRepository
+    user_repo = UserRepository()
+    usage_count, usage_date = await user_repo.get_email_breach_usage(user_id)
+    limit = int(os.getenv("HIBP_DAILY_LIMIT", "2"))
+    today = usage_date
+    return {"count": usage_count, "limit": limit, "date": today}
 
 @router.get("/{scan_id}")
 async def get_scan(scan_id: str, user_id: str = Depends(get_current_user_id)):
@@ -61,27 +84,11 @@ async def get_scan(scan_id: str, user_id: str = Depends(get_current_user_id)):
     # return normalized dict with 'id'
     return scan.model_dump()
 
-@router.get("")
-async def list_scans(user_id: str = Depends(get_current_user_id)):
-    scan_repo = ScanRepository()
-    scans = await scan_repo.list_by_user(user_id)
-    return [s.model_dump() for s in scans]
-
 @router.get("/{scan_id}/findings")
 async def get_findings(scan_id: str, user_id: str = Depends(get_current_user_id)):
     fr = FindingRepository()
     findings = await fr.list_by_scan(scan_id)
     return [f.model_dump() for f in findings]
-
-@router.get("/email-breach-usage")
-async def get_email_breach_usage(user_id: str = Depends(get_current_user_id)):
-    """Return the user's current daily email breach usage and limit."""
-    from ...repositories.users import UserRepository
-    user_repo = UserRepository()
-    usage_count, usage_date = await user_repo.get_email_breach_usage(user_id)
-    limit = int(os.getenv("HIBP_DAILY_LIMIT", "2"))
-    today = usage_date
-    return {"count": usage_count, "limit": limit, "date": today}
 
 @router.get("/{scan_id}/report")
 async def get_report(scan_id: str, user_id: str = Depends(get_current_user_id)):
