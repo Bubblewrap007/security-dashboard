@@ -72,11 +72,11 @@ async def get_email_breach_usage(user_id: str = Depends(get_current_user_id)):
 
 @router.post("/{scan_id}/ai-analysis")
 async def ai_analysis(scan_id: str, user_id: str = Depends(get_current_user_id)):
-    """Generate an AI-powered plain-English analysis of scan findings using Claude."""
+    """Generate an AI-powered plain-English analysis of scan findings using Gemini."""
     import logging
-    api_key = os.getenv("ANTHROPIC_API_KEY")
+    api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        raise HTTPException(status_code=503, detail="AI analysis unavailable: ANTHROPIC_API_KEY not set")
+        raise HTTPException(status_code=503, detail="AI analysis unavailable: GOOGLE_API_KEY not set")
 
     scan_repo = ScanRepository()
     scan = await scan_repo.get(scan_id)
@@ -119,18 +119,15 @@ async def ai_analysis(scan_id: str, user_id: str = Depends(get_current_user_id))
     )
 
     try:
-        from anthropic import AsyncAnthropic
-        client = AsyncAnthropic(api_key=api_key)
-        message = await client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        analysis = message.content[0].text
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = await model.generate_content_async(prompt)
+        analysis = response.text
         return {"analysis": analysis}
     except Exception as e:
         logging.getLogger(__name__).error("AI analysis failed: %s", e)
-        raise HTTPException(status_code=500, detail="AI analysis failed. Check ANTHROPIC_API_KEY and try again.")
+        raise HTTPException(status_code=500, detail="AI analysis failed. Check GOOGLE_API_KEY and try again.")
 
 
 @router.get("/{scan_id}")

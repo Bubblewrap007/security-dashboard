@@ -163,7 +163,7 @@ export default function ScanDetails(){
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-indigo-700 dark:text-indigo-300 font-semibold text-sm">AI Analysis</span>
-              <span className="text-xs text-indigo-500 dark:text-indigo-400">Powered by Claude</span>
+              <span className="text-xs text-indigo-500 dark:text-indigo-400">Powered by Gemini</span>
             </div>
             {!aiAnalysis && (
               <button
