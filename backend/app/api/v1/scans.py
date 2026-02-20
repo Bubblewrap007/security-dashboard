@@ -129,7 +129,7 @@ async def ai_analysis(scan_id: str, user_id: str = Depends(get_current_user_id))
         return {"analysis": analysis}
     except Exception as e:
         logging.getLogger(__name__).error("AI analysis failed: %s", e)
-        raise HTTPException(status_code=500, detail="AI analysis failed. Check GOOGLE_API_KEY and try again.")
+        raise HTTPException(status_code=500, detail=f"AI analysis failed: {e}")
 
 
 @router.get("/{scan_id}")
