@@ -1,6 +1,7 @@
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+import asyncio
 import os
 import logging
 
@@ -15,6 +16,9 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 RATE_LIMIT = int(os.getenv("RATE_LIMIT", "500"))  # requests per period
 RATE_PERIOD = int(os.getenv("RATE_PERIOD", "60"))  # seconds
 AUTH_RATE_LIMIT = int(os.getenv("AUTH_RATE_LIMIT", "50"))  # increased for auth endpoints
+
+# Hard timeout for all Redis operations — asyncio sockets ignore socket_connect_timeout
+_REDIS_TIMEOUT = 2.0
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
@@ -42,14 +46,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         try:
             if self.redis is None:
-                self.redis = redis.from_url(
-                    REDIS_URL,
-                    socket_connect_timeout=2,
-                    socket_timeout=2,
-                )
+                self.redis = redis.from_url(REDIS_URL)
         except Exception as e:
             logging.getLogger("app.rate_limit").warning("Redis client init failed, skipping rate limiting: %s", e)
             return await call_next(request)
+
         ip = request.client.host if request.client else "unknown"
         # use stricter limits for auth endpoints
         if request.url.path.startswith("/api/v1/auth"):
@@ -64,10 +65,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             p = self.redis.pipeline()
             p.incr(key, 1)
             p.expire(key, period)
-            val, _ = await p.execute()
+            # asyncio sockets ignore socket_connect_timeout — use wait_for as hard deadline
+            val, _ = await asyncio.wait_for(p.execute(), timeout=_REDIS_TIMEOUT)
             if int(val) > limit:
                 return JSONResponse({"detail": "Too many requests"}, status_code=429)
             return await call_next(request)
-        except Exception as e:
+        except (asyncio.TimeoutError, Exception) as e:
             logging.getLogger("app.rate_limit").warning("Redis unavailable, skipping rate limiting: %s", e)
+            self.redis = None  # reset so next request creates a fresh client
             return await call_next(request)
