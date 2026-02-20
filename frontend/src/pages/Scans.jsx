@@ -32,8 +32,10 @@ export default function Scans(){
 
   async function startScan(){
     if(!selectedAssetId) return
-    await fetchBreachUsage();
-    if(breachUsage.count >= breachUsage.limit) return;
+    if(isEmailSelected) {
+      await fetchBreachUsage();
+      if(breachUsage.count >= breachUsage.limit) return;
+    }
     setShowConfirm(true);
   }
 
@@ -115,9 +117,15 @@ export default function Scans(){
                   onConfirm={confirmScan}
                 >
                   <div>
-                    <div className="mb-2">You have a limit of {breachUsage.limit} email breach scans per day on the free plan.</div>
-                    <div className="mb-2">You have used {breachUsage.count} out of {breachUsage.limit} scans today.</div>
-                    <div>Upgrade your plan to unlock unlimited scans.</div>
+                    {isEmailSelected ? (
+                      <>
+                        <div className="mb-2">You have a limit of {breachUsage.limit} email breach scans per day on the free plan.</div>
+                        <div className="mb-2">You have used {breachUsage.count} out of {breachUsage.limit} scans today.</div>
+                        <div>Upgrade your plan to unlock unlimited scans.</div>
+                      </>
+                    ) : (
+                      <div>Start a security scan for <strong>{selectedAsset?.value}</strong>?</div>
+                    )}
                   </div>
                 </Modal>
           <button onClick={fetchScans} className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" title="Refresh scan list">🔄 Refresh</button>

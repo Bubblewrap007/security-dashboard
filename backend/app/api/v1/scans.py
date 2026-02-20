@@ -47,9 +47,9 @@ async def start_scan(payload: ScanBase, user_id: str = Depends(get_current_user_
         await loop.run_in_executor(None, _enqueue)
     except Exception as e:
         import logging
-        logging.getLogger(__name__).warning("Redis unavailable, skipping enqueue: %s", str(e))
-        await scan_repo.update_status(scan.id, "failed", error_message=str(e))
-        return {"scan_id": scan.id, "status": "failed", "error": "Scan worker unavailable"}
+        logging.getLogger(__name__).warning("Redis unavailable, running scan in-process: %s", str(e))
+        loop = asyncio.get_running_loop()
+        loop.run_in_executor(None, perform_scan, scan.id)
     return {"scan_id": scan.id, "status": scan.status}
 
 # NOTE: specific routes (no path parameters) must be defined BEFORE parameterized routes
