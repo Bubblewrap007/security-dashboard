@@ -11,6 +11,9 @@ export default function ScanDetails(){
   const [encryptPassword, setEncryptPassword] = useState('')
   const [encryptError, setEncryptError] = useState('')
   const [encrypting, setEncrypting] = useState(false)
+  const [aiAnalysis, setAiAnalysis] = useState(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState(null)
 
   const summary = useMemo(() => {
     const counts = { critical: 0, high: 0, medium: 0, low: 0 }
@@ -80,6 +83,27 @@ export default function ScanDetails(){
     }
   }
 
+  async function fetchAiAnalysis() {
+    setAiLoading(true)
+    setAiError(null)
+    try {
+      const res = await apiFetch(`/api/v1/scans/${id}/ai-analysis`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setAiError(data.detail || 'AI analysis failed. Please try again.')
+        return
+      }
+      setAiAnalysis(data.analysis)
+    } catch (err) {
+      setAiError('Network error. Please try again.')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   if(!scan) return <div className="p-8">Loading...</div>
 
   const getScoreColor = (score) => {
@@ -133,7 +157,43 @@ export default function ScanDetails(){
         <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded shadow text-sm dark:text-white">Low: <span className="font-bold">{summary.low}</span></div>
       </div>
       <div className="bg-white dark:bg-cyber-dark p-4 rounded shadow dark:shadow-cyber">
-        <h2 className="font-semibold mb-2 dark:text-cyber-blue">Findings</h2>
+        <h2 className="font-semibold mb-3 dark:text-cyber-blue">Findings</h2>
+
+        <div className="mb-4 border border-indigo-200 dark:border-indigo-700 rounded-lg p-4 bg-indigo-50 dark:bg-indigo-900 dark:bg-opacity-20">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-indigo-700 dark:text-indigo-300 font-semibold text-sm">AI Analysis</span>
+              <span className="text-xs text-indigo-500 dark:text-indigo-400">Powered by Claude</span>
+            </div>
+            {!aiAnalysis && (
+              <button
+                onClick={fetchAiAnalysis}
+                disabled={aiLoading || findings.length === 0}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1 rounded disabled:opacity-50"
+              >
+                {aiLoading ? 'Analysing...' : 'Explain findings'}
+              </button>
+            )}
+            {aiAnalysis && (
+              <button
+                onClick={() => { setAiAnalysis(null); setAiError(null); }}
+                className="text-xs text-indigo-500 dark:text-indigo-400 hover:underline"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {!aiAnalysis && !aiError && (
+            <p className="text-xs text-indigo-600 dark:text-indigo-400">
+              Get a plain-English summary of your results and a prioritised action list.
+            </p>
+          )}
+          {aiError && <p className="text-xs text-red-600 dark:text-red-400">{aiError}</p>}
+          {aiAnalysis && (
+            <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">{aiAnalysis}</p>
+          )}
+        </div>
+
         {findings.length === 0 && (
           <div className="text-sm text-gray-600 dark:text-gray-400">No findings yet. If a scan is still running, check back in a few minutes.</div>
         )}

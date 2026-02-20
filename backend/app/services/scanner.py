@@ -87,7 +87,7 @@ def check_email_hibp(scan_id: str, asset_id: str, email: str) -> List[Dict]:
         data = r.json()
         findings.append(build_finding(scan_id, asset_id, "hibp:breach_found", "high", "Email found in breach feeds", {"breaches_count": len(data)}, "This email has been seen in public breaches; consider password resets and monitoring"))
     elif r.status_code == 404:
-        findings.append(build_finding(scan_id, asset_id, "hibp:no_breach", "low", "No breaches detected for this email", {"email": email}, "No public breaches found for this email address."))
+        findings.append(build_finding(scan_id, asset_id, "hibp:no_breach", "low", "No breaches detected for this email", {"email": email, "scoring_impact": "none"}, "No public breaches found for this email address."))
     else:
         findings.append(build_finding(scan_id, asset_id, "hibp:error", "low", "HIBP lookup error", {"status_code": r.status_code}, "Check HIBP API key and rate limits"))
     return findings
@@ -154,7 +154,7 @@ def check_dkim(scan_id: str, asset_id: str, domain: str) -> List[Dict]:
         try:
             answers = dns.resolver.resolve(name, "TXT")
             texts = [b"".join(r.strings).decode() for r in answers]
-            findings.append(build_finding(scan_id, asset_id, "dkim:found", "low", "DKIM record present (default selector)", {"txt": texts}, "Verify DKIM is correctly configured and aligned with sending services"))
+            findings.append(build_finding(scan_id, asset_id, "dkim:found", "low", "DKIM record present (default selector)", {"txt": texts, "scoring_impact": "none"}, "Verify DKIM is correctly configured and aligned with sending services"))
         except Exception:
             # try wildcard: query just _domainkey
             answers = dns.resolver.resolve(f"_domainkey.{domain}", "CNAME")
@@ -180,7 +180,7 @@ def check_security_headers(scan_id: str, asset_id: str, domain: str) -> List[Dic
         
         # If we got redirected, add informational finding
         if r.history:
-            findings.append(build_finding(scan_id, asset_id, "headers:redirects", "low", "Domain redirects (may be hosted externally)", {"redirect_chain": len(r.history), "final_url": r.url}, "This is normal for domains hosted on Netlify, Squarespace, or Google Workspace"))
+            findings.append(build_finding(scan_id, asset_id, "headers:redirects", "low", "Domain redirects (may be hosted externally)", {"redirect_chain": len(r.history), "final_url": r.url, "scoring_impact": "none"}, "This is normal for domains hosted on Netlify, Squarespace, or Google Workspace"))
         
         # HSTS
         if "strict-transport-security" not in headers:
@@ -228,7 +228,7 @@ def check_tls_cert(scan_id: str, asset_id: str, domain: str) -> List[Dict]:
                     findings.append(build_finding(scan_id, asset_id, "tls:expiring_soon", "high", "TLS certificate expiring soon", {"days_left": days_left, "not_after": not_after}, "Renew TLS certificate before expiry"))
                 else:
                     # Certificate is valid - add informational finding
-                    findings.append(build_finding(scan_id, asset_id, "tls:valid", "low", "TLS certificate valid", {"days_left": days_left, "not_after": not_after}, "Certificate is valid and will expire in " + str(days_left) + " days"))
+                    findings.append(build_finding(scan_id, asset_id, "tls:valid", "low", "TLS certificate valid", {"days_left": days_left, "not_after": not_after, "scoring_impact": "none"}, "Certificate is valid and will expire in " + str(days_left) + " days"))
     except ssl.SSLError as e:
         # Check if it's a common external hosting scenario
         error_msg = str(e)
@@ -332,7 +332,7 @@ def check_ipv4_ports(scan_id: str, asset_id: str, ip: str) -> List[Dict]:
             findings.append(build_finding(
                 scan_id, asset_id, "ipv4:open_ports", "low",
                 f"Open ports detected: {', '.join(map(str, safe_ports))}",
-                {"ip": ip, "open_ports": safe_ports},
+                {"ip": ip, "open_ports": safe_ports, "scoring_impact": "none"},
                 "Review open ports and ensure only necessary services are exposed"
             ))
     

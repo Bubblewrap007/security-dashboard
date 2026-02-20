@@ -3,7 +3,7 @@ from ...services.scanner import score_from_findings
 from ...models.scan import ScanBase
 from ...repositories.scans import ScanRepository
 from ...repositories.findings import FindingRepository
-from ...tasks.scan_worker import perform_scan
+from ...tasks.scan_worker import perform_scan, _perform_scan_async
 from ...core.security import decode_access_token
 from rq import Queue
 from redis import Redis
@@ -47,9 +47,8 @@ async def start_scan(payload: ScanBase, user_id: str = Depends(get_current_user_
         await loop.run_in_executor(None, _enqueue)
     except Exception as e:
         import logging
-        logging.getLogger(__name__).warning("Redis unavailable, running scan in-process: %s", str(e))
-        loop = asyncio.get_running_loop()
-        loop.run_in_executor(None, perform_scan, scan.id)
+        logging.getLogger(__name__).warning("Redis unavailable, running scan as background task: %s", str(e))
+        asyncio.create_task(_perform_scan_async(scan.id))
     return {"scan_id": scan.id, "status": scan.status}
 
 # NOTE: specific routes (no path parameters) must be defined BEFORE parameterized routes
@@ -70,6 +69,69 @@ async def get_email_breach_usage(user_id: str = Depends(get_current_user_id)):
     limit = int(os.getenv("HIBP_DAILY_LIMIT", "2"))
     today = usage_date
     return {"count": usage_count, "limit": limit, "date": today}
+
+@router.post("/{scan_id}/ai-analysis")
+async def ai_analysis(scan_id: str, user_id: str = Depends(get_current_user_id)):
+    """Generate an AI-powered plain-English analysis of scan findings using Claude."""
+    import logging
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="AI analysis unavailable: ANTHROPIC_API_KEY not set")
+
+    scan_repo = ScanRepository()
+    scan = await scan_repo.get(scan_id)
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    if str(scan.user_id) != str(user_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    fr = FindingRepository()
+    findings = await fr.list_by_scan(scan_id)
+    if not findings:
+        return {"analysis": "No findings to analyse yet. Run the scan and try again once it completes."}
+
+    from ...repositories.assets import AssetRepository
+    asset_repo = AssetRepository()
+    asset_labels = []
+    for aid in scan.asset_ids:
+        asset = await asset_repo.get(aid)
+        if asset:
+            asset_labels.append(f"{asset.type}: {asset.value}")
+
+    findings_text = "\n".join(
+        f"- [{f.severity.upper()}] {f.title} — {f.recommendation}"
+        for f in findings
+    )
+    assets_text = ", ".join(asset_labels) if asset_labels else "unknown"
+    score_text = str(scan.score) if scan.score is not None else "N/A"
+
+    prompt = (
+        f"You are a cybersecurity advisor helping a small business owner understand their security scan results. "
+        f"Be clear, friendly, and actionable. Avoid unnecessary technical jargon.\n\n"
+        f"Scanned assets: {assets_text}\n"
+        f"Security score: {score_text}/100\n\n"
+        f"Findings:\n{findings_text}\n\n"
+        f"Please provide:\n"
+        f"1. A 2-3 sentence plain-English summary of the overall security posture.\n"
+        f"2. The top 3 priority actions to take, most impactful first.\n"
+        f"3. Any findings that are purely informational and need no action.\n\n"
+        f"Keep your response under 400 words. Use plain text, no markdown."
+    )
+
+    try:
+        from anthropic import AsyncAnthropic
+        client = AsyncAnthropic(api_key=api_key)
+        message = await client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        analysis = message.content[0].text
+        return {"analysis": analysis}
+    except Exception as e:
+        logging.getLogger(__name__).error("AI analysis failed: %s", e)
+        raise HTTPException(status_code=500, detail="AI analysis failed. Check ANTHROPIC_API_KEY and try again.")
+
 
 @router.get("/{scan_id}")
 async def get_scan(scan_id: str, user_id: str = Depends(get_current_user_id)):
