@@ -1,51 +1,3 @@
-  // --- Security Questions State ---
-  const [securityQuestions, setSecurityQuestions] = useState([
-    { question: '', answer: '' },
-    { question: '', answer: '' },
-    { question: '', answer: '' },
-  ]);
-  const [securityQuestionsError, setSecurityQuestionsError] = useState('');
-  const [securityQuestionsSuccess, setSecurityQuestionsSuccess] = useState('');
-  const [showSecurityQuestionsForm, setShowSecurityQuestionsForm] = useState(false);
-
-  // Load existing security questions if present
-  useEffect(() => {
-    if (user && Array.isArray(user.security_questions) && user.security_questions.length > 0) {
-      setSecurityQuestions(user.security_questions.map(q => ({ question: q.question, answer: '' })).slice(0, 3));
-    }
-  }, [user]);
-
-  const handleSecurityQuestionChange = (idx, field, value) => {
-    setSecurityQuestions(prev => prev.map((q, i) => i === idx ? { ...q, [field]: value } : q));
-  };
-
-  const handleSaveSecurityQuestions = async (e) => {
-    e.preventDefault();
-    setSecurityQuestionsError('');
-    setSecurityQuestionsSuccess('');
-    // Validate
-    if (securityQuestions.some(q => !q.question.trim() || !q.answer.trim())) {
-      setSecurityQuestionsError('All questions and answers are required.');
-      return;
-    }
-    try {
-      const res = await apiFetch('/api/v1/auth/security-questions/set', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ questions: securityQuestions }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail || data.msg || 'Failed to save security questions');
-      }
-      setSecurityQuestionsSuccess('Security questions updated successfully.');
-      setShowSecurityQuestionsForm(false);
-      setTimeout(() => setSecurityQuestionsSuccess(''), 5000);
-    } catch (err) {
-      setSecurityQuestionsError(err.message);
-    }
-  };
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../utils/api';
@@ -95,6 +47,55 @@ export default function Account() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
+
+  // --- Security Questions State ---
+  const [securityQuestions, setSecurityQuestions] = useState([
+    { question: '', answer: '' },
+    { question: '', answer: '' },
+    { question: '', answer: '' },
+  ]);
+  const [securityQuestionsError, setSecurityQuestionsError] = useState('');
+  const [securityQuestionsSuccess, setSecurityQuestionsSuccess] = useState('');
+  const [showSecurityQuestionsForm, setShowSecurityQuestionsForm] = useState(false);
+
+  // Load existing security questions if present
+  useEffect(() => {
+    if (user && Array.isArray(user.security_questions) && user.security_questions.length > 0) {
+      setSecurityQuestions(user.security_questions.map(q => ({ question: q.question, answer: '' })).slice(0, 3));
+    }
+  }, [user]);
+
+  const handleSecurityQuestionChange = (idx, field, value) => {
+    setSecurityQuestions(prev => prev.map((q, i) => i === idx ? { ...q, [field]: value } : q));
+  };
+
+  const handleSaveSecurityQuestions = async (e) => {
+    e.preventDefault();
+    setSecurityQuestionsError('');
+    setSecurityQuestionsSuccess('');
+    // Validate
+    if (securityQuestions.some(q => !q.question.trim() || !q.answer.trim())) {
+      setSecurityQuestionsError('All questions and answers are required.');
+      return;
+    }
+    try {
+      const res = await apiFetch('/api/v1/auth/security-questions/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ questions: securityQuestions }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || data.msg || 'Failed to save security questions');
+      }
+      setSecurityQuestionsSuccess('Security questions updated successfully.');
+      setShowSecurityQuestionsForm(false);
+      setTimeout(() => setSecurityQuestionsSuccess(''), 5000);
+    } catch (err) {
+      setSecurityQuestionsError(err.message);
+    }
+  };
 
   // Load user data
   useEffect(() => {
@@ -266,7 +267,7 @@ export default function Account() {
     setResendVerificationLoading(true);
     setResendVerificationError('');
     setResendVerificationLink('');
-    
+
     try {
       const response = await apiFetch('/api/v1/auth/resend-verification-email', {
         method: 'POST',
@@ -568,7 +569,7 @@ export default function Account() {
             <div>
               <span className="text-gray-400">Last Login:</span>
               <span className="ml-2 text-white font-mono">
-                {user?.last_login 
+                {user?.last_login
                   ? (parseLastLogin(user.last_login)?.toLocaleString(undefined, { timeZone: user?.timezone || timeZone || getBrowserTimeZone() || undefined }) || 'Never')
                   : 'Never'
                 }
@@ -625,50 +626,51 @@ export default function Account() {
           </div>
         )}
 
-        {/* Time Zone Preferences */}
-                {/* Security Questions Section */}
-                <div className="mb-8 p-6 border border-orange-600 rounded-lg bg-gray-900">
-                  <h3 className="text-xl font-bold text-orange-400 mb-4">Security Questions for Account Recovery</h3>
-                  {securityQuestionsSuccess && <div className="text-green-400 mb-2">{securityQuestionsSuccess}</div>}
-                  {securityQuestionsError && <div className="text-red-400 mb-2">{securityQuestionsError}</div>}
-                  {!showSecurityQuestionsForm ? (
-                    <button
-                      className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded"
-                      onClick={() => setShowSecurityQuestionsForm(true)}
-                    >
-                      {user && user.security_questions && user.security_questions.length > 0 ? 'Update Security Questions' : 'Set Security Questions'}
-                    </button>
-                  ) : (
-                    <form onSubmit={handleSaveSecurityQuestions} className="bg-white dark:bg-slate-800 p-4 rounded shadow mt-2">
-                      {[0, 1, 2].map(idx => (
-                        <div key={idx} className="mb-4">
-                          <label className="block mb-1 font-medium text-gray-800 dark:text-gray-200">Question {idx + 1}
-                            <input
-                              type="text"
-                              className="w-full border px-3 py-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                              value={securityQuestions[idx].question}
-                              onChange={e => handleSecurityQuestionChange(idx, 'question', e.target.value)}
-                              placeholder={`Enter security question ${idx + 1}`}
-                            />
-                          </label>
-                          <label className="block mt-1 text-gray-800 dark:text-gray-200">Answer
-                            <input
-                              type="text"
-                              className="w-full border px-3 py-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                              value={securityQuestions[idx].answer}
-                              onChange={e => handleSecurityQuestionChange(idx, 'answer', e.target.value)}
-                              placeholder="Enter answer"
-                            />
-                          </label>
-                        </div>
-                      ))}
-                      <div className="flex gap-2">
-                        <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Save</button>
-                        <button type="button" className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded" onClick={() => setShowSecurityQuestionsForm(false)}>Cancel</button>
-                      </div>
-                    </form>
-                  )}
+        {/* Security Questions Section */}
+        <div className="mb-8 p-6 border border-orange-600 rounded-lg bg-gray-900">
+          <h3 className="text-xl font-bold text-orange-400 mb-4">Security Questions for Account Recovery</h3>
+          {securityQuestionsSuccess && <div className="text-green-400 mb-2">{securityQuestionsSuccess}</div>}
+          {securityQuestionsError && <div className="text-red-400 mb-2">{securityQuestionsError}</div>}
+          {!showSecurityQuestionsForm ? (
+            <button
+              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded"
+              onClick={() => setShowSecurityQuestionsForm(true)}
+            >
+              {user && user.security_questions && user.security_questions.length > 0 ? 'Update Security Questions' : 'Set Security Questions'}
+            </button>
+          ) : (
+            <form onSubmit={handleSaveSecurityQuestions} className="bg-white dark:bg-slate-800 p-4 rounded shadow mt-2">
+              {[0, 1, 2].map(idx => (
+                <div key={idx} className="mb-4">
+                  <label className="block mb-1 font-medium text-gray-800 dark:text-gray-200">Question {idx + 1}
+                    <input
+                      type="text"
+                      className="w-full border px-3 py-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                      value={securityQuestions[idx].question}
+                      onChange={e => handleSecurityQuestionChange(idx, 'question', e.target.value)}
+                      placeholder={`Enter security question ${idx + 1}`}
+                    />
+                  </label>
+                  <label className="block mt-1 text-gray-800 dark:text-gray-200">Answer
+                    <input
+                      type="text"
+                      className="w-full border px-3 py-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                      value={securityQuestions[idx].answer}
+                      onChange={e => handleSecurityQuestionChange(idx, 'answer', e.target.value)}
+                      placeholder="Enter answer"
+                    />
+                  </label>
                 </div>
+              ))}
+              <div className="flex gap-2">
+                <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Save</button>
+                <button type="button" className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded" onClick={() => setShowSecurityQuestionsForm(false)}>Cancel</button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Time Zone Preferences */}
         <div className="mb-8 p-6 border border-indigo-600 rounded-lg bg-gray-900">
           <h3 className="text-xl font-bold text-indigo-400 mb-4">Time Zone</h3>
           <p className="text-gray-400 mb-3">Select your time zone so timestamps match your locale.</p>
@@ -1078,7 +1080,7 @@ export default function Account() {
           </div>
         )}
 
-        {/* Logout Button - Top */}
+        {/* Logout Button */}
         <button
           onClick={handleLogout}
           className="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold mb-4"
@@ -1105,13 +1107,13 @@ export default function Account() {
               <p className="text-gray-300 mb-4 font-semibold">
                 Enter your password to confirm:
               </p>
-              
+
               {deleteError && (
                 <div className="mb-4 p-3 bg-red-900 border border-red-600 rounded text-red-100 text-sm">
                   {deleteError}
                 </div>
               )}
-              
+
               <input
                 type="password"
                 placeholder="Your password"
@@ -1120,7 +1122,7 @@ export default function Account() {
                 className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg mb-4 text-white"
                 disabled={deletingAccount}
               />
-              
+
               <div className="flex gap-2">
                 <button
                   onClick={handleDeleteAccount}
