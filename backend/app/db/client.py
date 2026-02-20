@@ -96,6 +96,7 @@ def init_db(mongo_uri: str):
                 mongo_uri,
                 serverSelectionTimeoutMS=5000,
                 connectTimeoutMS=5000,
+                socketTimeoutMS=10000,
             )
             logger.info("Connected to MongoDB")
 
