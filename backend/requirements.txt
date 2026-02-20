@@ -26,5 +26,5 @@ pytest==7.4.0
 pytest-asyncio==0.22.0
 httpx==0.24.1
 sendgrid==6.11.0
-google-genai>=1.0.0
+google-genai>=1.51.0
 

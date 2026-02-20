@@ -124,7 +124,7 @@ async def ai_analysis(scan_id: str, user_id: str = Depends(get_current_user_id))
         from google import genai as google_genai
         client = google_genai.Client(api_key=api_key)
         response = await client.aio.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-3-flash-preview",
             contents=prompt,
         )
         analysis = response.text
