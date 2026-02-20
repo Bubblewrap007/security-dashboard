@@ -121,10 +121,12 @@ async def ai_analysis(scan_id: str, user_id: str = Depends(get_current_user_id))
     )
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = await model.generate_content_async(prompt)
+        from google import genai as google_genai
+        client = google_genai.Client(api_key=api_key)
+        response = await client.aio.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+        )
         analysis = response.text
         return {"analysis": analysis}
     except Exception as e:
