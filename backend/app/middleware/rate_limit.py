@@ -42,7 +42,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         try:
             if self.redis is None:
-                self.redis = redis.from_url(REDIS_URL)
+                self.redis = redis.from_url(
+                    REDIS_URL,
+                    socket_connect_timeout=2,
+                    socket_timeout=2,
+                )
         except Exception as e:
             logging.getLogger("app.rate_limit").warning("Redis client init failed, skipping rate limiting: %s", e)
             return await call_next(request)
