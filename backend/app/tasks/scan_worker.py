@@ -14,6 +14,8 @@ import asyncio
 import os
 
 async def _perform_scan_async(scan_id: str):
+    import logging
+    logger = logging.getLogger(__name__)
     init_db(os.getenv("MONGO_URI", "mongodb://mongo:27017/mydb"))
     scan_repo = ScanRepository()
     asset_repo = AssetRepository()
@@ -23,55 +25,51 @@ async def _perform_scan_async(scan_id: str):
     scan = await scan_repo.get(scan_id)
     if not scan:
         return
-    await scan_repo.update_status(scan_id, "running", started_at=datetime.utcnow())
-    all_findings = []
-    # iterate assets
-    assets_for_demo = []
-    for aid in scan.asset_ids:
-        asset = await asset_repo.get(aid)
-        if not asset:
-            continue
-        assets_for_demo.append({"id": asset.id, "type": asset.type, "value": asset.value})
-        if asset.type == "email":
-            hibp_key = os.getenv("HIBP_API_KEY")
-            limit = int(os.getenv("HIBP_DAILY_LIMIT", "2"))
-            if hibp_key and limit > 0:
-                count = await user_repo.increment_email_breach_usage(scan.user_id)
-                if count > limit:
-                    # Instead of adding a finding, just skip scanning
-                    continue
-            all_findings += check_email_hibp(scan_id, aid, asset.value)
-        elif asset.type == "domain":
-            # run domain checks
-            all_findings += check_spf(scan_id, aid, asset.value)
-            all_findings += check_dmarc(scan_id, aid, asset.value)
-            all_findings += check_dkim(scan_id, aid, asset.value)
-            all_findings += check_security_headers(scan_id, aid, asset.value)
-            all_findings += check_tls_cert(scan_id, aid, asset.value)
-        elif asset.type == "ipv4":
-            # run IPv4 checks
-            all_findings += check_ipv4_connectivity(scan_id, aid, asset.value)
-            all_findings += check_ipv4_ports(scan_id, aid, asset.value)
-        elif asset.type == "url":
-            # run URL checks
-            all_findings += check_url_accessibility(scan_id, aid, asset.value)
-            all_findings += check_url_security_headers(scan_id, aid, asset.value)
-            all_findings += check_url_ssl_cert(scan_id, aid, asset.value)
-
-    # persist findings
-    if all_findings:
-        await findings_repo.delete_by_scan(scan_id)
-        await findings_repo.create_many(all_findings)
-    score, counts = score_from_findings(all_findings)
-    await scan_repo.set_results(scan_id, score, counts, completed_at=datetime.utcnow())
-    # audit completion
     try:
-        from ..repositories.audit import AuditRepository
-        await AuditRepository().create_event(actor_id=scan.user_id, action="complete_scan", target_type="scan", target_id=scan.id, details={"score": score, "counts": counts})
-    except Exception:
-        # avoid failing the job if auditing fails
-        pass
-    return
+        await scan_repo.update_status(scan_id, "running", started_at=datetime.utcnow())
+        all_findings = []
+        for aid in scan.asset_ids:
+            asset = await asset_repo.get(aid)
+            if not asset:
+                continue
+            if asset.type == "email":
+                hibp_key = os.getenv("HIBP_API_KEY")
+                limit = int(os.getenv("HIBP_DAILY_LIMIT", "2"))
+                if hibp_key and limit > 0:
+                    count = await user_repo.increment_email_breach_usage(scan.user_id)
+                    if count > limit:
+                        continue
+                all_findings += check_email_hibp(scan_id, aid, asset.value)
+            elif asset.type == "domain":
+                all_findings += check_spf(scan_id, aid, asset.value)
+                all_findings += check_dmarc(scan_id, aid, asset.value)
+                all_findings += check_dkim(scan_id, aid, asset.value)
+                all_findings += check_security_headers(scan_id, aid, asset.value)
+                all_findings += check_tls_cert(scan_id, aid, asset.value)
+            elif asset.type == "ipv4":
+                all_findings += check_ipv4_connectivity(scan_id, aid, asset.value)
+                all_findings += check_ipv4_ports(scan_id, aid, asset.value)
+            elif asset.type == "url":
+                all_findings += check_url_accessibility(scan_id, aid, asset.value)
+                all_findings += check_url_security_headers(scan_id, aid, asset.value)
+                all_findings += check_url_ssl_cert(scan_id, aid, asset.value)
+
+        if all_findings:
+            await findings_repo.delete_by_scan(scan_id)
+            await findings_repo.create_many(all_findings)
+        score, counts = score_from_findings(all_findings)
+        await scan_repo.set_results(scan_id, score, counts, completed_at=datetime.utcnow())
+        try:
+            from ..repositories.audit import AuditRepository
+            await AuditRepository().create_event(actor_id=scan.user_id, action="complete_scan", target_type="scan", target_id=scan.id, details={"score": score, "counts": counts})
+        except Exception:
+            pass
+    except Exception as e:
+        logger.exception("Scan %s failed with unhandled error: %s", scan_id, e)
+        try:
+            await scan_repo.update_status(scan_id, "failed")
+        except Exception:
+            pass
 
 # RQ executes sync callables, so expose a sync wrapper that runs the async worker
 def perform_scan(scan_id: str):
