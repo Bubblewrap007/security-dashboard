@@ -92,7 +92,11 @@ def init_db(mongo_uri: str):
             client = InMemoryClient()
             logger.info("Using in-memory MongoDB client for testing")
         else:
-            client = AsyncIOMotorClient(mongo_uri)
+            client = AsyncIOMotorClient(
+                mongo_uri,
+                serverSelectionTimeoutMS=5000,
+                connectTimeoutMS=5000,
+            )
             logger.info("Connected to MongoDB")
 
 
