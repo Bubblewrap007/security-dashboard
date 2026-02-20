@@ -16,5 +16,6 @@ class ScanInDB(ScanBase):
     completed_at: Optional[datetime] = None
     assetCount: Optional[int] = None
     error_message: Optional[str] = None
+    progress: int = 0
 
     model_config = ConfigDict(from_attributes=True, validate_by_name=True)

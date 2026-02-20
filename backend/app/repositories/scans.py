@@ -22,6 +22,9 @@ class ScanRepository:
         update.update(kwargs)
         await self._col.update_one({"_id": ObjectId(scan_id)}, {"$set": update})
 
+    async def update_progress(self, scan_id: str, progress: int):
+        await self._col.update_one({"_id": ObjectId(scan_id)}, {"$set": {"progress": progress}})
+
     async def set_results(self, scan_id: str, score: int, summary_counts: dict, completed_at: datetime):
         await self._col.update_one({"_id": ObjectId(scan_id)}, {"$set": {"score": score, "summary_counts": summary_counts, "completed_at": completed_at, "status": "completed"}})
 

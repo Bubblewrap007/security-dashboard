@@ -5,8 +5,14 @@ from ...repositories.scans import ScanRepository
 from ...repositories.findings import FindingRepository
 from ...tasks.scan_worker import _perform_scan_async
 from ...core.security import decode_access_token
+from rq import Queue
+from redis import Redis
 import os
 import asyncio
+import logging
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+_log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/scans", tags=["scans"])
 
@@ -27,8 +33,24 @@ async def start_scan(payload: ScanBase, user_id: str = Depends(get_current_user_
     scan = await scan_repo.create(user_id, payload)
     # audit: scan created/queued
     await AuditRepository().create_event(actor_id=user_id, action="start_scan", target_type="scan", target_id=scan.id, details={"asset_ids": scan.asset_ids})
-    # Run the scan as an asyncio background task (no RQ worker deployed)
-    asyncio.create_task(_perform_scan_async(scan.id))
+    # Prefer RQ worker for long-running scans; fall back to asyncio task if Redis unavailable
+    try:
+        import warnings
+        scan_id_str = scan.id
+
+        def _enqueue():
+            r = Redis.from_url(REDIS_URL, socket_connect_timeout=5, socket_timeout=5)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message=".*resolve_connection.*", category=DeprecationWarning)
+                q = Queue(connection=r)
+                q.enqueue("app.tasks.scan_worker.perform_scan", scan_id_str)
+
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, _enqueue)
+        _log.info("Scan %s enqueued to RQ worker", scan.id)
+    except Exception as e:
+        _log.warning("Redis unavailable (%s), running scan as asyncio task", e)
+        asyncio.create_task(_perform_scan_async(scan.id))
     return {"scan_id": scan.id, "status": scan.status}
 
 # NOTE: specific routes (no path parameters) must be defined BEFORE parameterized routes

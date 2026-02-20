@@ -13,6 +13,8 @@ from datetime import datetime
 import asyncio
 import os
 
+_STEPS_PER_TYPE = {"email": 1, "domain": 5, "ipv4": 2, "url": 3}
+
 async def _perform_scan_async(scan_id: str):
     import logging
     logger = logging.getLogger(__name__)
@@ -27,38 +29,55 @@ async def _perform_scan_async(scan_id: str):
         return
     try:
         await scan_repo.update_status(scan_id, "running", started_at=datetime.utcnow())
-        all_findings = []
+
+        # Calculate total steps so we can report accurate progress
+        assets_loaded = []
         for aid in scan.asset_ids:
             asset = await asset_repo.get(aid)
-            if not asset:
-                continue
+            if asset:
+                assets_loaded.append(asset)
+        total_steps = sum(_STEPS_PER_TYPE.get(a.type, 1) for a in assets_loaded)
+        completed_steps = 0
+
+        async def _tick():
+            nonlocal completed_steps
+            completed_steps += 1
+            pct = int(completed_steps / total_steps * 100) if total_steps else 100
+            await scan_repo.update_progress(scan_id, min(pct, 99))  # hold at 99 until fully done
+
+        all_findings = []
+        for asset in assets_loaded:
+            aid = asset.id
             if asset.type == "email":
                 hibp_key = os.getenv("HIBP_API_KEY")
                 limit = int(os.getenv("HIBP_DAILY_LIMIT", "2"))
                 if hibp_key and limit > 0:
                     count = await user_repo.increment_email_breach_usage(scan.user_id)
                     if count > limit:
+                        await _tick()
                         continue
                 all_findings += check_email_hibp(scan_id, aid, asset.value)
+                await _tick()
             elif asset.type == "domain":
-                all_findings += check_spf(scan_id, aid, asset.value)
-                all_findings += check_dmarc(scan_id, aid, asset.value)
-                all_findings += check_dkim(scan_id, aid, asset.value)
-                all_findings += check_security_headers(scan_id, aid, asset.value)
-                all_findings += check_tls_cert(scan_id, aid, asset.value)
+                all_findings += check_spf(scan_id, aid, asset.value);        await _tick()
+                all_findings += check_dmarc(scan_id, aid, asset.value);       await _tick()
+                all_findings += check_dkim(scan_id, aid, asset.value);        await _tick()
+                all_findings += check_security_headers(scan_id, aid, asset.value); await _tick()
+                all_findings += check_tls_cert(scan_id, aid, asset.value);    await _tick()
             elif asset.type == "ipv4":
-                all_findings += check_ipv4_connectivity(scan_id, aid, asset.value)
-                all_findings += check_ipv4_ports(scan_id, aid, asset.value)
+                all_findings += check_ipv4_connectivity(scan_id, aid, asset.value); await _tick()
+                all_findings += check_ipv4_ports(scan_id, aid, asset.value);         await _tick()
             elif asset.type == "url":
-                all_findings += check_url_accessibility(scan_id, aid, asset.value)
-                all_findings += check_url_security_headers(scan_id, aid, asset.value)
-                all_findings += check_url_ssl_cert(scan_id, aid, asset.value)
+                all_findings += check_url_accessibility(scan_id, aid, asset.value);       await _tick()
+                all_findings += check_url_security_headers(scan_id, aid, asset.value);    await _tick()
+                all_findings += check_url_ssl_cert(scan_id, aid, asset.value);            await _tick()
 
         if all_findings:
             await findings_repo.delete_by_scan(scan_id)
             await findings_repo.create_many(all_findings)
         score, counts = score_from_findings(all_findings)
         await scan_repo.set_results(scan_id, score, counts, completed_at=datetime.utcnow())
+        await scan_repo.update_progress(scan_id, 100)
         try:
             from ..repositories.audit import AuditRepository
             await AuditRepository().create_event(actor_id=scan.user_id, action="complete_scan", target_type="scan", target_id=scan.id, details={"score": score, "counts": counts})
