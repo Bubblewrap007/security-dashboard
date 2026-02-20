@@ -2,6 +2,13 @@ import React, {useEffect, useState} from 'react'
 import BackendStatusBanner from '../components/BackendStatusBanner'
 import { apiFetch } from '../utils/api'
 
+const TYPE_LABELS = {
+  email: 'Email Address',
+  domain: 'Domain Name',
+  url: 'Website URL',
+  ipv4: 'IP Address',
+}
+
 export default function Assets(){
   const [assets, setAssets] = useState([])
   const [type, setType] = useState('email')
@@ -9,7 +16,14 @@ export default function Assets(){
 
   const normalizeValue = (assetType, rawValue) => {
     const trimmed = rawValue.trim()
-    if (['email', 'domain', 'url'].includes(assetType)) {
+    if (assetType === 'url') {
+      // Auto-upgrade http:// to https:// so users don't get false HTTPS warnings
+      if (trimmed.toLowerCase().startsWith('http://')) {
+        return 'https://' + trimmed.slice(7)
+      }
+      return trimmed.toLowerCase()
+    }
+    if (['email', 'domain'].includes(assetType)) {
       return trimmed.toLowerCase()
     }
     return trimmed
@@ -90,24 +104,35 @@ export default function Assets(){
       <p className="text-sm text-gray-600 mb-3 dark:text-gray-400">
         Add your digital assets to scan: emails, domains, IP addresses, or URLs. Scans check for security issues, misconfigurations, and vulnerabilities.
       </p>
-      <form onSubmit={handleAdd} className="mb-4">
-        <select value={type} onChange={e=>setType(e.target.value)} className="border px-2 py-1 mr-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-          <option value="email">Email</option>
-          <option value="domain">Domain</option>
-          <option value="ipv4">IPv4 Address</option>
-          <option value="url">URL</option>
+      <form onSubmit={handleAdd} className="mb-2">
+        <select value={type} onChange={e=>{setType(e.target.value); setValue('')}} className="border px-2 py-1 mr-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+          <option value="email">Email Address</option>
+          <option value="domain">Domain Name</option>
+          <option value="url">Website URL</option>
+          <option value="ipv4">IP Address</option>
         </select>
-        <input value={value} onChange={e=>setValue(e.target.value)} placeholder={type === 'email' ? 'user@example.com' : type === 'domain' ? 'example.com' : type === 'ipv4' ? '192.168.1.1' : type === 'url' ? 'https://example.com' : 'Enter value'} className="border px-2 py-1 mr-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+        <input value={value} onChange={e=>setValue(e.target.value)}
+          placeholder={
+            type === 'email' ? 'you@yourcompany.com' :
+            type === 'domain' ? 'yourcompany.com' :
+            type === 'url' ? 'https://yourcompany.com' :
+            '192.168.1.1'
+          }
+          className="border px-2 py-1 mr-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white w-64"
+        />
         <button className="bg-blue-600 text-white px-3 py-1 rounded">Add</button>
       </form>
-      <div className="text-xs text-gray-500 mb-4 dark:text-gray-400">
-        Tip: Email for breach checks, Domain for DNS/TLS/headers, IPv4 for network scans, URL for web app security.
+      <div className="text-xs text-gray-500 mb-4 dark:text-gray-400 mt-2">
+        {type === 'email' && 'Checks if this email address appears in known data breaches.'}
+        {type === 'domain' && 'Checks your domain\'s email protections (SPF, DMARC, DKIM), TLS certificate, and security headers. Use just the domain name, e.g. yourcompany.com'}
+        {type === 'url' && 'Checks a specific webpage for HTTPS, security headers, and SSL. Use the full address, e.g. https://shop.yourcompany.com'}
+        {type === 'ipv4' && 'Checks network connectivity and open ports on this IP address.'}
       </div>
       <ul className="space-y-2">
         {assets.map(a=>(
           <li key={a.id} className="bg-white dark:bg-cyber-dark p-3 rounded shadow dark:shadow-cyber flex items-center justify-between">
             <div className="dark:text-gray-300">
-              <div className="font-semibold">{a.type}: {a.value}</div>
+              <div className="font-semibold">{TYPE_LABELS[a.type] ?? a.type}: {a.value}</div>
               {a.parent_asset_id && (
                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   🔗 Child of: {assets.find(asset => asset.id === a.parent_asset_id)?.value}
