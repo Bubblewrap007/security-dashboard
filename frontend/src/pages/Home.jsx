@@ -183,16 +183,8 @@ export default function Home({ onStartWalkthrough }) {
           </div>
         </div>
 
-        {/* Demo preview */}
-        <div className="flex flex-col items-center mb-16">
-          <p className="text-xs text-gray-400 dark:text-gray-500 mb-4 uppercase tracking-widest font-semibold">
-            Sample Dashboard Preview
-          </p>
-          <DemoPreview />
-        </div>
-
         {/* Feature Cards */}
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
           <div
             onClick={() => navigate(authStatus === 'loggedin' ? '/assets' : '/register')}
             className="bg-white dark:bg-cyber-dark p-6 rounded-lg shadow-md dark:shadow-cyber border-l-4 border-blue-500 dark:border-cyber-blue hover:dark:shadow-cyber-lg transition-all cursor-pointer hover:scale-105 hover:shadow-lg dark:hover:shadow-[0_0_20px_rgba(0,217,255,0.3)]"
@@ -219,6 +211,14 @@ export default function Home({ onStartWalkthrough }) {
             <h3 className="text-lg font-semibold mb-2 dark:text-white">Dashboard Analytics</h3>
             <p className="text-gray-600 dark:text-gray-400">Track your security posture over time with trend charts, downloadable PDF reports, and AI-powered analysis.</p>
           </div>
+        </div>
+
+        {/* Demo preview */}
+        <div className="flex flex-col items-center">
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-4 uppercase tracking-widest font-semibold">
+            Sample Dashboard Preview
+          </p>
+          <DemoPreview />
         </div>
       </div>
     </div>
