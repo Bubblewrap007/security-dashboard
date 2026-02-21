@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import BackendStatusBanner from '../components/BackendStatusBanner'
 import { apiFetch } from '../utils/api'
+import PolicyModal from '../components/PolicyModal'
 
 export default function Register() {
   const [username, setUsername] = useState('')
@@ -13,6 +14,7 @@ export default function Register() {
   const [verificationLink, setVerificationLink] = useState(null)
   const [acceptTos, setAcceptTos] = useState(false)
   const [acceptPrivacy, setAcceptPrivacy] = useState(false)
+  const [policyModal, setPolicyModal] = useState(null)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -81,11 +83,17 @@ export default function Register() {
         </label>
         <label className="block mb-4 text-sm dark:text-gray-300">
           <input type="checkbox" className="mr-2" checked={acceptTos} onChange={e => setAcceptTos(e.target.checked)} />
-          I agree to the <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">Terms of Service</a>
+          I agree to the{' '}
+          <button type="button" onClick={() => setPolicyModal('tos')} className="text-blue-600 dark:text-blue-400 underline hover:no-underline">
+            Terms of Service
+          </button>
         </label>
         <label className="block mb-4 text-sm dark:text-gray-300">
           <input type="checkbox" className="mr-2" checked={acceptPrivacy} onChange={e => setAcceptPrivacy(e.target.checked)} />
-          I agree to the <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">Privacy Policy</a>
+          I agree to the{' '}
+          <button type="button" onClick={() => setPolicyModal('privacy')} className="text-blue-600 dark:text-blue-400 underline hover:no-underline">
+            Privacy Policy
+          </button>
         </label>
         <button className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white py-2 rounded font-semibold" disabled={!acceptTos || !acceptPrivacy}>Register</button>
         <div className="mt-4 text-center text-sm dark:text-gray-300">
@@ -95,6 +103,7 @@ export default function Register() {
           <strong>Security Note:</strong> An email verification link will be sent to your email address to prevent unauthorized account access.
         </div>
       </form>
+      <PolicyModal type={policyModal} onClose={() => setPolicyModal(null)} />
     </div>
   )
 }

@@ -17,9 +17,8 @@ import Account from './pages/Account';
 import Feedback from './pages/Feedback';
 import Walkthrough, { shouldShowWalkthrough } from './components/Walkthrough';
 import ErrorBoundary from './components/ErrorBoundary';
-import TermsOfService from './pages/TermsOfService';
-import PrivacyPolicy from './pages/PrivacyPolicy';
 import RecoverAccount from './pages/RecoverAccount';
+import CookieBanner from './components/CookieBanner';
 
 function AppShell() {
   const location = useLocation();
@@ -131,6 +130,7 @@ function AppShell() {
     <>
       <Nav onStartWalkthrough={() => setShowWalkthrough(true)} />
       <Walkthrough open={showWalkthrough} onClose={() => setShowWalkthrough(false)} />
+      <CookieBanner />
       {showIdleWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-white dark:bg-slate-900 text-gray-900 dark:text-white p-6 rounded-lg shadow-lg max-w-md w-full">
@@ -176,8 +176,6 @@ function AppShell() {
         <Route path="/scans/:id" element={<ScanDetails />} />
         <Route path="/feedback" element={<Feedback />} />
         <Route path="/admin" element={<Admin />} />
-        <Route path="/terms-of-service" element={<TermsOfService />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/recover-account" element={<RecoverAccount />} />
       </Routes>
     </>
