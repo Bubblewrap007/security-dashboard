@@ -433,7 +433,6 @@ export default function ScanDetails(){
                 {sortedFindings.map(f=>(
                   <li key={f.id} className="mb-3 border-l-4 pl-3 dark:bg-gray-800 dark:bg-opacity-50 py-2 rounded-r" style={{borderColor: getSeverityColor(f.severity)}}>
                     <div className="font-bold dark:text-white">[{f.severity.toUpperCase()}] {f.title}</div>
-                    <div className="text-sm mt-1 dark:text-gray-300">Why it matters: this item could expose data or services if left unresolved.</div>
                     <div className="text-sm mt-1 dark:text-gray-300">Evidence: <pre className="whitespace-pre-wrap dark:text-gray-400">{JSON.stringify(f.evidence)}</pre></div>
                     <div className="text-sm mt-1 italic dark:text-gray-300">Recommendation: {f.recommendation}</div>
                   </li>
