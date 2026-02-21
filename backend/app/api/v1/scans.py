@@ -158,6 +158,7 @@ async def get_report(scan_id: str, user_id: str = Depends(get_current_user_id)):
     # Return a simple PDF report
     import logging
     from ...utils.pdf import build_scan_pdf
+    from ...repositories.assets import AssetRepository
     scan_repo = ScanRepository()
     try:
         scan = await scan_repo.get(scan_id)
@@ -168,7 +169,16 @@ async def get_report(scan_id: str, user_id: str = Depends(get_current_user_id)):
         findings = await fr.list_by_scan(scan_id)
         if not findings:
             logging.warning(f"No findings for scan {scan_id}")
-        pdf_bytes = build_scan_pdf(scan, findings)
+        asset_repo = AssetRepository()
+        assets = []
+        for aid in (scan.asset_ids or []):
+            try:
+                a = await asset_repo.get(aid)
+                if a:
+                    assets.append(a)
+            except Exception:
+                pass
+        pdf_bytes = build_scan_pdf(scan, findings, assets)
         headers = {"Content-Disposition": f"attachment; filename=scan-{scan_id}.pdf"}
         return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
     except Exception as e:
@@ -198,7 +208,17 @@ async def get_report_encrypted(scan_id: str, request: Request, user_id: str = De
 
     fr = FindingRepository()
     findings = await fr.list_by_scan(scan_id)
-    pdf_bytes = build_scan_pdf(scan, findings)
+    from ...repositories.assets import AssetRepository
+    asset_repo = AssetRepository()
+    assets = []
+    for aid in (scan.asset_ids or []):
+        try:
+            a = await asset_repo.get(aid)
+            if a:
+                assets.append(a)
+        except Exception:
+            pass
+    pdf_bytes = build_scan_pdf(scan, findings, assets)
 
     salt = os.urandom(16)
     kdf = PBKDF2HMAC(
