@@ -184,10 +184,10 @@ def check_security_headers(scan_id: str, asset_id: str, domain: str) -> List[Dic
         
         # HSTS
         if "strict-transport-security" not in headers:
-            findings.append(build_finding(scan_id, asset_id, "headers:hsts_missing", "medium", "HSTS header missing", {"note": "Not critical for externally hosted domains"}, "Enable HSTS to ensure browsers only use HTTPS"))
+            findings.append(build_finding(scan_id, asset_id, "headers:hsts_missing", "low", "HSTS header missing", {"note": "Often not configurable on externally hosted domains"}, "Enable HSTS to ensure browsers only use HTTPS"))
         # CSP
         if "content-security-policy" not in headers:
-            findings.append(build_finding(scan_id, asset_id, "headers:csp_missing", "medium", "CSP header missing", {"note": "Contact your hosting provider if needed"}, "Add a Content-Security-Policy appropriate to your site"))
+            findings.append(build_finding(scan_id, asset_id, "headers:csp_missing", "low", "CSP header missing", {"note": "May not be configurable on externally hosted domains"}, "Add a Content-Security-Policy appropriate to your site"))
         # X-Frame-Options
         if "x-frame-options" not in headers:
             findings.append(build_finding(scan_id, asset_id, "headers:xfo_missing", "low", "X-Frame-Options missing", {}, "Consider setting X-Frame-Options to DENY or SAMEORIGIN"))
@@ -408,7 +408,7 @@ def check_url_security_headers(scan_id: str, asset_id: str, url: str) -> List[Di
         # HSTS
         if url.startswith('https://') and "strict-transport-security" not in headers:
             findings.append(build_finding(
-                scan_id, asset_id, "url:hsts_missing", "medium",
+                scan_id, asset_id, "url:hsts_missing", "low",
                 "HSTS header missing",
                 {"url": url},
                 "Enable HSTS to ensure browsers only use HTTPS"
@@ -416,7 +416,7 @@ def check_url_security_headers(scan_id: str, asset_id: str, url: str) -> List[Di
         # CSP
         if "content-security-policy" not in headers:
             findings.append(build_finding(
-                scan_id, asset_id, "url:csp_missing", "medium",
+                scan_id, asset_id, "url:csp_missing", "low",
                 "CSP header missing",
                 {"url": url},
                 "Add Content-Security-Policy to mitigate XSS attacks"
