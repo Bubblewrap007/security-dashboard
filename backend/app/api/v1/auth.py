@@ -368,6 +368,16 @@ async def change_password(request: Request, current_user = Depends(get_current_u
     
     return {"msg": "Password changed successfully"}
 
+class VerifyPasswordRequest(BaseModel):
+    password: str
+
+@router.post("/verify-password")
+async def verify_password_endpoint(payload: VerifyPasswordRequest, current_user = Depends(get_current_user)):
+    from ...core.security import verify_password
+    if not verify_password(payload.password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
+    return {"valid": True}
+
 @router.post("/update-email")
 async def update_email(request: Request, current_user = Depends(get_current_user)):
     body = await request.json()

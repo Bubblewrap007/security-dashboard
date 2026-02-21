@@ -8,6 +8,7 @@ export default function Login() {
   const [searchParams] = useSearchParams()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState(null)
   const [info, setInfo] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -113,7 +114,33 @@ export default function Login() {
               <input className="w-full border px-3 py-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={identifier} onChange={e=>setIdentifier(e.target.value)} autoComplete="username" />
             </label>
             <label className="block mb-4 dark:text-gray-300">Password
-              <input type="password" className="w-full border px-3 py-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" />
+              <div className="relative mt-1">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="w-full border px-3 py-2 pr-10 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </label>
             <button disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white py-2 rounded font-semibold disabled:opacity-60">Sign in</button>
             <div className="mt-3 text-center text-sm dark:text-gray-300">

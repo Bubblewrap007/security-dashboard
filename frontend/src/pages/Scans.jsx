@@ -8,7 +8,7 @@ function formatScanDate(dateStr) {
   if (!dateStr) return null
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return null
-  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })
 }
 
 const TYPE_LABELS = {

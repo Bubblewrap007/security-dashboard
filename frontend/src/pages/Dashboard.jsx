@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react'
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Scatter, ScatterChart } from 'recharts'
+import { AreaChart, Area, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Link, Navigate } from 'react-router-dom'
 import BackendStatusBanner from '../components/BackendStatusBanner'
 import { apiFetch } from '../utils/api'
@@ -186,7 +186,7 @@ export default function Dashboard(){
         ? dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
         : `Scan ${idx + 1}`
       const fullDate = !isNaN(dt.getTime())
-        ? dt.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        ? dt.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })
         : ''
       return { name, score: s.score, fullDate }
     })
@@ -221,6 +221,12 @@ export default function Dashboard(){
     )
     return buildChartPoints(relevant)
   }, [selectedAsset, completedScans, groups])
+
+  // Determine if the trend line is going up or down
+  const trendIsPositive = useMemo(() => {
+    if (!chartData || chartData.length < 2) return true
+    return chartData[chartData.length - 1].trend >= chartData[0].trend
+  }, [chartData])
 
   const averageScore = useMemo(() => {
     if (completedScans.length === 0) return null
@@ -442,54 +448,63 @@ export default function Dashboard(){
             </div>
           ) : (
             <ResponsiveContainer>
-              <LineChart data={chartData}>
-              {/* Scatter points for actual scores */}
-              <Line 
-                type="monotone" 
-                dataKey="score" 
-                stroke="transparent" 
-                strokeWidth={0}
-                dot={{ fill: '#00D9FF', r: 6, strokeWidth: 2, stroke: '#0ea5e9' }}
-                name="Actual Score"
-              />
-              {/* Trendline (regression) */}
-              <Line 
-                type="monotone" 
-                dataKey="trend"
-                stroke="#f59e0b" 
-                strokeWidth={2.5}
-                strokeDasharray="5 5"
-                dot={false}
-                name="Trend"
-              />
-              {/* Average line */}
-              <Line 
-                type="monotone" 
-                dataKey="average"
-                stroke="#10b981" 
-                strokeWidth={2}
-                dot={false}
-                name="Average"
-              />
-              <CartesianGrid stroke="#334155" strokeDasharray="3 3" />
-              <XAxis dataKey="name" stroke="#94a3b8" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" height={50} interval="preserveStartEnd" />
-              <YAxis stroke="#94a3b8" domain={[0, 100]} />
-              <Tooltip content={<CustomTooltip />} />
-            </LineChart>
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={trendIsPositive ? '#22c55e' : '#ef4444'} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={trendIsPositive ? '#22c55e' : '#ef4444'} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                {/* Score area — green when trending up, red when trending down */}
+                <Area
+                  type="monotone"
+                  dataKey="score"
+                  stroke={trendIsPositive ? '#22c55e' : '#ef4444'}
+                  strokeWidth={2}
+                  fill="url(#scoreGrad)"
+                  dot={{ fill: '#00D9FF', r: 6, strokeWidth: 2, stroke: '#0ea5e9' }}
+                  name="Actual Score"
+                />
+                {/* Trendline (regression) */}
+                <Line
+                  type="monotone"
+                  dataKey="trend"
+                  stroke="#f59e0b"
+                  strokeWidth={2.5}
+                  strokeDasharray="5 5"
+                  dot={false}
+                  name="Trend"
+                />
+                {/* Average line */}
+                <Line
+                  type="monotone"
+                  dataKey="average"
+                  stroke="#06b6d4"
+                  strokeWidth={2}
+                  dot={false}
+                  name="Average"
+                />
+                <CartesianGrid stroke="#334155" strokeDasharray="3 3" />
+                <XAxis dataKey="name" stroke="#94a3b8" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" height={50} interval="preserveStartEnd" />
+                <YAxis stroke="#94a3b8" domain={[0, 100]} />
+                <Tooltip content={<CustomTooltip />} />
+              </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
         <div className="mt-4 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-cyan-500 border-2 border-cyan-600"></div>
+            <div className={`w-8 h-3 rounded-sm border relative flex items-center justify-end pr-0.5 ${trendIsPositive ? 'bg-green-500/20 border-green-500' : 'bg-red-500/20 border-red-500'}`}>
+              <div className="w-2 h-2 rounded-full bg-cyan-400 border border-cyan-500 shrink-0"></div>
+            </div>
             <span>Actual Scores</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-0.5 bg-amber-500" style={{borderTop: '2px dashed #f59e0b'}}></div>
+            <div className="w-8 h-0.5" style={{borderTop: '2px dashed #f59e0b'}}></div>
             <span>Trend Direction</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-0.5 bg-green-500"></div>
+            <div className="w-8 h-0.5 bg-cyan-500"></div>
             <span>Average Score</span>
           </div>
         </div>

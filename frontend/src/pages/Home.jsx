@@ -169,7 +169,7 @@ export default function Home({ onStartWalkthrough }) {
 
           {/* Right: shield logo */}
           <div className="flex justify-center">
-            <div className="relative w-full max-w-md h-96 flex items-center justify-center">
+            <div className="relative w-full max-w-xl h-[520px] flex items-center justify-center">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full blur-3xl opacity-20 animate-pulse"></div>
               <div className="absolute inset-0 bg-gradient-to-l from-blue-500 to-cyan-400 rounded-full blur-2xl opacity-15 animate-pulse" style={{animationDelay: '0.3s'}}></div>
               <div className="relative z-10 w-full h-full drop-shadow-[0_0_30px_rgba(0,217,255,0.4)]">

@@ -14,6 +14,12 @@ export default function Assets(){
   const [type, setType] = useState('email')
   const [value, setValue] = useState('')
 
+  // Delete confirmation modal state
+  const [deleteTarget, setDeleteTarget] = useState(null) // { id, value, type }
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteError, setDeleteError] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
   // Groups state
   const [groups, setGroups] = useState([])
   const [newGroupName, setNewGroupName] = useState('')
@@ -108,11 +114,40 @@ export default function Assets(){
     }
   }
 
-  async function handleDelete(id){
-    const ok = window.confirm('Remove this asset?')
-    if(!ok) return
-    const res = await apiFetch(`/api/v1/assets/${id}`, {method: 'DELETE', credentials: 'include'})
-    if(res.ok){ fetchAssets() }
+  function handleDelete(id) {
+    const asset = assets.find(a => a.id === id)
+    setDeleteTarget(asset || { id })
+    setDeletePassword('')
+    setDeleteError('')
+  }
+
+  async function confirmDelete() {
+    if (!deletePassword) { setDeleteError('Password is required.'); return }
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      const verifyRes = await apiFetch('/api/v1/auth/verify-password', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword }),
+      })
+      if (!verifyRes.ok) {
+        setDeleteError('Incorrect password. Please try again.')
+        setDeleting(false)
+        return
+      }
+      const res = await apiFetch(`/api/v1/assets/${deleteTarget.id}`, { method: 'DELETE', credentials: 'include' })
+      if (res.ok) {
+        setDeleteTarget(null)
+        setDeletePassword('')
+        fetchAssets()
+      }
+    } catch {
+      setDeleteError('Something went wrong. Please try again.')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   // --- Group helpers ---
@@ -363,6 +398,52 @@ export default function Assets(){
           </div>
         )}
       </div>
+
+      {/* Delete asset confirmation modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <h3 className="text-lg font-bold mb-1 text-red-600 dark:text-red-400">Remove Asset</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              You are about to permanently remove{' '}
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {TYPE_LABELS[deleteTarget.type] ?? deleteTarget.type}: {deleteTarget.value}
+              </span>.
+              This cannot be undone.
+            </p>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Enter your password to confirm
+            </label>
+            <input
+              type="password"
+              value={deletePassword}
+              onChange={e => { setDeletePassword(e.target.value); setDeleteError('') }}
+              onKeyDown={e => e.key === 'Enter' && confirmDelete()}
+              placeholder="Your password"
+              autoFocus
+              className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 mb-2 dark:bg-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+            {deleteError && (
+              <div className="text-xs text-red-600 dark:text-red-400 mb-3">{deleteError}</div>
+            )}
+            <div className="flex gap-2 justify-end mt-2">
+              <button
+                onClick={() => { setDeleteTarget(null); setDeletePassword(''); setDeleteError('') }}
+                className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm hover:bg-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="px-4 py-2 rounded bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {deleting ? 'Removing…' : 'Remove Asset'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
