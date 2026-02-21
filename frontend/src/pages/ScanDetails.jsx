@@ -92,6 +92,14 @@ export default function ScanDetails(){
     return map
   }, [findings, scan, isGroupScan])
 
+  // Overall score for group scans: average of per-asset scores (matches backend logic)
+  const groupScore = useMemo(() => {
+    if (!isGroupScan || !findingsByAsset || !scan) return null
+    const perAssetScores = (scan.asset_ids || []).map(id => computeAssetScore(findingsByAsset.get(id) || []))
+    if (perAssetScores.length === 0) return null
+    return Math.round(perAssetScores.reduce((s, v) => s + v, 0) / perAssetScores.length)
+  }, [isGroupScan, findingsByAsset, scan])
+
   const getSeverityColor = (severity) => {
     switch(severity) {
       case 'critical': return '#dc2626'
@@ -203,7 +211,10 @@ export default function ScanDetails(){
       <h1 className="text-2xl font-bold mb-2 dark:text-cyber-blue">Scan Report</h1>
       <div className="mb-2 dark:text-gray-300">
         Status: {scan.status}
-        {!isActive && <> | Score: <span className={scan.score != null ? getScoreColor(scan.score) + ' font-bold' : ''}>{scan.score ?? 'N/A'}</span></>}
+        {!isActive && (() => {
+          const displayScore = isGroupScan ? groupScore : scan.score
+          return <> | Score: <span className={displayScore != null ? getScoreColor(displayScore) + ' font-bold' : ''}>{displayScore ?? 'N/A'}</span></>
+        })()}
       </div>
 
       {scan.asset_ids && scan.asset_ids.length > 0 && (

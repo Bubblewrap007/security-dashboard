@@ -75,7 +75,25 @@ async def _perform_scan_async(scan_id: str):
         if all_findings:
             await findings_repo.delete_by_scan(scan_id)
             await findings_repo.create_many(all_findings)
-        score, counts = score_from_findings(all_findings)
+
+        # Group scans: average per-asset scores so each asset's issues are weighted equally.
+        # A clean asset (score 100) should not be dragged down by another asset's findings.
+        if len(assets_loaded) > 1:
+            from collections import defaultdict
+            findings_by_asset = defaultdict(list)
+            for f in all_findings:
+                findings_by_asset[f['asset_id']].append(f)
+            per_asset_scores = []
+            counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+            for asset in assets_loaded:
+                asset_score, asset_counts = score_from_findings(findings_by_asset[asset.id])
+                per_asset_scores.append(asset_score)
+                for k in counts:
+                    counts[k] += asset_counts[k]
+            score = round(sum(per_asset_scores) / len(per_asset_scores)) if per_asset_scores else 100
+        else:
+            score, counts = score_from_findings(all_findings)
+
         await scan_repo.set_results(scan_id, score, counts, completed_at=datetime.utcnow())
         await scan_repo.update_progress(scan_id, 100)
         try:
