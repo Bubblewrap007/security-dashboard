@@ -29,7 +29,6 @@ const getScoreBgColor = (score) => {
 }
 
 export default function Dashboard(){
-  const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(null)
   const [scans, setScans] = useState([])
@@ -52,39 +51,6 @@ export default function Dashboard(){
       if (scansRes.ok) {
         const scansData = await scansRes.json()
         setScans(scansData)
-        
-
-        const completedWithScores = scansData.filter(s => s.status === 'completed' && typeof s.score === 'number')
-        if (completedWithScores.length > 0) {
-          const sorted = completedWithScores
-            .sort((a, b) => new Date(a.completed_at || a.created_at || 0) - new Date(b.completed_at || b.created_at || 0))
-          
-          // Calculate average
-          const avg = sorted.reduce((sum, s) => sum + s.score, 0) / sorted.length
-          
-          // Calculate trendline
-          const n = sorted.length
-          let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0
-          sorted.forEach((s, i) => {
-            sumX += i
-            sumY += s.score
-            sumXY += i * s.score
-            sumXX += i * i
-          })
-          const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX)
-          const intercept = (sumY - slope * sumX) / n
-          
-          // Build chart data with all values
-          const chart = sorted.map((s, idx) => ({ 
-            name: `Scan ${idx + 1}`, 
-            score: s.score,
-            trend: slope * idx + intercept,
-            average: avg
-          }))
-          setData(chart)
-        } else {
-          setData(null)
-        }
       }
       const assetsRes = await apiFetch(`/api/v1/assets`, { credentials: 'include' })
       if (assetsRes.ok) {
@@ -206,52 +172,44 @@ export default function Dashboard(){
     return map
   }, [assets])
 
-  // Recalculate chart data based on selected asset
-  const chartData = useMemo(() => {
-    if (!data) return null
-    
-    if (selectedAsset === 'all') {
-      return data
-    }
-    
-    // Filter to scans that included this asset, keep original scores
-    const completedWithAsset = completedScans.filter(s => 
-      typeof s.score === 'number' && 
-      Array.isArray(s.asset_ids) && 
-      s.asset_ids.includes(selectedAsset)
-    )
-    
-    if (completedWithAsset.length === 0) return null
-    
-    const sorted = completedWithAsset.sort((a, b) => 
+  // Build chart points from a filtered list of completed scans
+  function buildChartPoints(filteredScans) {
+    if (filteredScans.length === 0) return null
+    const sorted = [...filteredScans].sort((a, b) =>
       new Date(a.completed_at || a.created_at || 0) - new Date(b.completed_at || b.created_at || 0)
     )
-    
-    // Use original scan scores, just filter to this asset
-    const assetScores = sorted.map((scan, idx) => ({
-      name: `Scan ${idx + 1}`,
-      score: scan.score
-    }))
-    
-    // Calculate trend and average
-    const avg = assetScores.reduce((sum, s) => sum + s.score, 0) / assetScores.length
-    const n = assetScores.length
+    const points = sorted.map((s, idx) => ({ name: `Scan ${idx + 1}`, score: s.score }))
+    const avg = points.reduce((sum, s) => sum + s.score, 0) / points.length
+    const n = points.length
     let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0
-    assetScores.forEach((s, i) => {
-      sumX += i
-      sumY += s.score
-      sumXY += i * s.score
-      sumXX += i * i
-    })
+    points.forEach((s, i) => { sumX += i; sumY += s.score; sumXY += i * s.score; sumXX += i * i })
     const slope = n > 1 ? (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX) : 0
     const intercept = (sumY - slope * sumX) / n
-    
-    return assetScores.map((s, idx) => ({
-      ...s,
-      trend: slope * idx + intercept,
-      average: avg
-    }))
-  }, [data, selectedAsset, completedScans])
+    return points.map((s, idx) => ({ ...s, trend: slope * idx + intercept, average: avg }))
+  }
+
+  // Recalculate chart data based on selected asset or group
+  const chartData = useMemo(() => {
+    const scored = completedScans.filter(s => typeof s.score === 'number')
+    if (selectedAsset === 'all') return buildChartPoints(scored)
+
+    if (selectedAsset.startsWith('group:')) {
+      const groupId = selectedAsset.slice(6)
+      const group = groups.find(g => g.id === groupId)
+      if (!group) return null
+      const groupAssetIds = new Set(group.asset_ids || [])
+      const relevant = scored.filter(s =>
+        Array.isArray(s.asset_ids) && s.asset_ids.some(id => groupAssetIds.has(id))
+      )
+      return buildChartPoints(relevant)
+    }
+
+    // Single asset
+    const relevant = scored.filter(s =>
+      Array.isArray(s.asset_ids) && s.asset_ids.includes(selectedAsset)
+    )
+    return buildChartPoints(relevant)
+  }, [selectedAsset, completedScans, groups])
 
   const averageScore = useMemo(() => {
     if (completedScans.length === 0) return null
@@ -443,15 +401,26 @@ export default function Dashboard(){
           </div>
           <div className="flex items-center gap-2">
             <label className="text-sm text-gray-600 dark:text-gray-400">View:</label>
-            <select 
-              value={selectedAsset} 
+            <select
+              value={selectedAsset}
               onChange={(e) => setSelectedAsset(e.target.value)}
               className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white px-3 py-1 rounded text-sm"
             >
               <option value="all">All Assets</option>
-              {assets.map(a => (
-                <option key={a.id} value={a.id}>{a.type}: {a.value}</option>
-              ))}
+              {groups.length > 0 && (
+                <optgroup label="── Groups">
+                  {groups.map(g => (
+                    <option key={g.id} value={`group:${g.id}`}>{g.name}</option>
+                  ))}
+                </optgroup>
+              )}
+              {assets.length > 0 && (
+                <optgroup label="── Individual Assets">
+                  {assets.map(a => (
+                    <option key={a.id} value={a.id}>{a.type}: {a.value}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
         </div>

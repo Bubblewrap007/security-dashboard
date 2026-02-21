@@ -49,6 +49,7 @@ export default function ScanDetails(){
   const [aiAnalysis, setAiAnalysis] = useState(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState(null)
+  const [viewMode, setViewMode] = useState('group') // 'group' | 'all' — only applies to group scans
 
   const isGroupScan = scan ? (scan.asset_ids && scan.asset_ids.length > 1) : false
 
@@ -323,8 +324,34 @@ export default function ScanDetails(){
               <div className="text-sm text-gray-600 dark:text-gray-400">No findings recorded for this scan.</div>
             )}
 
+            {/* View mode toggle — group scans only */}
+            {isGroupScan && findings.length > 0 && (
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setViewMode('group')}
+                  className={`px-3 py-1 rounded text-xs font-medium border transition-colors ${
+                    viewMode === 'group'
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  By Asset
+                </button>
+                <button
+                  onClick={() => setViewMode('all')}
+                  className={`px-3 py-1 rounded text-xs font-medium border transition-colors ${
+                    viewMode === 'all'
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  All Issues
+                </button>
+              </div>
+            )}
+
             {/* Group scan: findings separated by asset */}
-            {isGroupScan && findingsByAsset ? (
+            {isGroupScan && findingsByAsset && viewMode === 'group' ? (
               <div className="space-y-6">
                 {(scan.asset_ids || []).map(assetId => {
                   const asset = assets.find(a => a.id === assetId)
