@@ -142,6 +142,13 @@ export default function Dashboard(){
     return [...completedScans].sort((a, b) => new Date(b.completed_at || b.created_at || 0) - new Date(a.completed_at || a.created_at || 0))[0]
   }, [completedScans])
 
+  // Scan number map: scanId -> scan number consistent with Scans page (newest = highest number)
+  const scanNumberMap = useMemo(() => {
+    const map = new Map()
+    scans.forEach((s, idx) => map.set(s.id, scans.length - idx))
+    return map
+  }, [scans])
+
   const latestAssetCount = useMemo(() => {
     if (!latestCompletedScan) return 0
     if (typeof latestCompletedScan.assetCount === 'number' && latestCompletedScan.assetCount > 0) {
@@ -320,7 +327,7 @@ export default function Dashboard(){
                 const assetList = scan ? (scan.asset_ids || []).map(id => assetMap.get(id) || id).join(', ') : 'Unknown'
                 return (
                   <div key={s.id}>
-                    <Link to={`/scans/${s.id}`} className="text-blue-600 hover:underline">Scan #{completedScans.length - idx}</Link>: {s.total} issue{s.total !== 1 ? 's' : ''} · {assetList}
+                    <Link to={`/scans/${s.id}`} className="text-blue-600 hover:underline">Scan #{scanNumberMap.get(s.id)}</Link>: {s.total} issue{s.total !== 1 ? 's' : ''} · {assetList}
                   </div>
                 )
               })}
@@ -331,7 +338,7 @@ export default function Dashboard(){
           <div className="text-sm text-gray-500 dark:text-gray-400" title="Most recent completed scan.">Last Scan</div>
           <div className="text-2xl font-bold">
             {latestCompletedScan ? (
-              <Link to={`/scans/${latestCompletedScan.id}`} className="text-blue-600 hover:underline">Scan #{completedScans.length}</Link>
+              <Link to={`/scans/${latestCompletedScan.id}`} className="text-blue-600 hover:underline">Scan #{scanNumberMap.get(latestCompletedScan.id)}</Link>
             ) : (
               'No scans yet'
             )}

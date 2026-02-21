@@ -73,10 +73,12 @@ function AppShell() {
   useEffect(() => {
     const lastClosed = localStorage.getItem(sessionCloseKey);
     if (lastClosed) {
+      // Always remove immediately — if we leave it, the next navigation re-checks
+      // an aging timestamp and may trigger a spurious logout mid-session.
+      localStorage.removeItem(sessionCloseKey);
       const elapsedMs = Date.now() - Number(lastClosed);
       if (!Number.isNaN(elapsedMs) && elapsedMs >= 60 * 1000) {
         apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' }).finally(() => {
-          localStorage.removeItem(sessionCloseKey);
           if (isProtectedRoute(location.pathname)) {
             navigate('/login');
           }
