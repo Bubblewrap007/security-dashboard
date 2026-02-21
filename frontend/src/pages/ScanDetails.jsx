@@ -50,6 +50,8 @@ export default function ScanDetails(){
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState(null)
 
+  const isGroupScan = scan ? (scan.asset_ids && scan.asset_ids.length > 1) : false
+
   const summary = useMemo(() => {
     const counts = { critical: 0, high: 0, medium: 0, low: 0 }
     findings.forEach(f => {
@@ -62,6 +64,33 @@ export default function ScanDetails(){
     const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
     return [...findings].sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity])
   }, [findings])
+
+  // Client-side per-asset score: mirrors the backend SEVERITY_DEDUCTIONS formula
+  const SEVERITY_DEDUCTIONS = { critical: 25, high: 15, medium: 7, low: 3 }
+  function computeAssetScore(assetFindings) {
+    let score = 100
+    assetFindings.forEach(f => {
+      const evidence = f.evidence || {}
+      if (evidence.scoring_impact !== 'none') {
+        score -= SEVERITY_DEDUCTIONS[f.severity] || 0
+      }
+    })
+    return Math.max(0, score)
+  }
+
+  // For group scans: findings grouped and sorted per asset
+  const findingsByAsset = useMemo(() => {
+    if (!isGroupScan || !scan) return null
+    const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
+    const map = new Map()
+    ;(scan.asset_ids || []).forEach(id => map.set(id, []))
+    findings.forEach(f => {
+      if (map.has(f.asset_id)) map.get(f.asset_id).push(f)
+      else map.set(f.asset_id, [f])
+    })
+    map.forEach((af, id) => map.set(id, af.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity])))
+    return map
+  }, [findings, scan, isGroupScan])
 
   const getSeverityColor = (severity) => {
     switch(severity) {
@@ -282,16 +311,70 @@ export default function ScanDetails(){
             {findings.length === 0 && (
               <div className="text-sm text-gray-600 dark:text-gray-400">No findings recorded for this scan.</div>
             )}
-            <ul>
-              {sortedFindings.map(f=>(
-                <li key={f.id} className="mb-3 border-l-4 pl-3 dark:bg-gray-800 dark:bg-opacity-50 py-2 rounded-r" style={{borderColor: getSeverityColor(f.severity)}}>
-                  <div className="font-bold dark:text-white">[{f.severity.toUpperCase()}] {f.title}</div>
-                  <div className="text-sm mt-1 dark:text-gray-300">Why it matters: this item could expose data or services if left unresolved.</div>
-                  <div className="text-sm mt-1 dark:text-gray-300">Evidence: <pre className="whitespace-pre-wrap dark:text-gray-400">{JSON.stringify(f.evidence)}</pre></div>
-                  <div className="text-sm mt-1 italic dark:text-gray-300">Recommendation: {f.recommendation}</div>
-                </li>
-              ))}
-            </ul>
+
+            {/* Group scan: findings separated by asset */}
+            {isGroupScan && findingsByAsset ? (
+              <div className="space-y-6">
+                {(scan.asset_ids || []).map(assetId => {
+                  const asset = assets.find(a => a.id === assetId)
+                  const af = findingsByAsset.get(assetId) || []
+                  const assetScore = computeAssetScore(af)
+                  const scoreColor = assetScore >= 80 ? 'text-green-600 dark:text-green-400' : assetScore >= 60 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'
+                  const ac = { critical: 0, high: 0, medium: 0, low: 0 }
+                  af.forEach(f => { if (ac[f.severity] !== undefined) ac[f.severity]++ })
+                  return (
+                    <div key={assetId} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                      {/* Asset header */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                        <div>
+                          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mr-2">
+                            {asset?.type ?? 'asset'}
+                          </span>
+                          <span className="font-semibold dark:text-white">{asset?.value ?? assetId}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
+                            {ac.critical > 0 && <span className="mr-2 text-red-600 dark:text-red-400">C:{ac.critical}</span>}
+                            {ac.high > 0 && <span className="mr-2 text-red-600 dark:text-red-400">H:{ac.high}</span>}
+                            {ac.medium > 0 && <span className="mr-2 text-yellow-600 dark:text-yellow-400">M:{ac.medium}</span>}
+                            {ac.low > 0 && <span className="text-gray-500">L:{ac.low}</span>}
+                          </div>
+                          <span className={`text-sm font-bold ${scoreColor}`}>{assetScore}/100</span>
+                        </div>
+                      </div>
+                      {/* Asset findings */}
+                      <div className="p-3">
+                        {af.length === 0 ? (
+                          <div className="text-sm text-green-600 dark:text-green-400 py-1">No issues found for this asset.</div>
+                        ) : (
+                          <ul className="space-y-2">
+                            {af.map(f => (
+                              <li key={f.id} className="border-l-4 pl-3 py-2 dark:bg-gray-800 dark:bg-opacity-30 rounded-r" style={{borderColor: getSeverityColor(f.severity)}}>
+                                <div className="font-bold dark:text-white text-sm">[{f.severity.toUpperCase()}] {f.title}</div>
+                                <div className="text-sm mt-1 dark:text-gray-300">Evidence: <pre className="whitespace-pre-wrap dark:text-gray-400 text-xs">{JSON.stringify(f.evidence)}</pre></div>
+                                <div className="text-sm mt-1 italic dark:text-gray-300">Recommendation: {f.recommendation}</div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              /* Single-asset scan: flat sorted list */
+              <ul>
+                {sortedFindings.map(f=>(
+                  <li key={f.id} className="mb-3 border-l-4 pl-3 dark:bg-gray-800 dark:bg-opacity-50 py-2 rounded-r" style={{borderColor: getSeverityColor(f.severity)}}>
+                    <div className="font-bold dark:text-white">[{f.severity.toUpperCase()}] {f.title}</div>
+                    <div className="text-sm mt-1 dark:text-gray-300">Why it matters: this item could expose data or services if left unresolved.</div>
+                    <div className="text-sm mt-1 dark:text-gray-300">Evidence: <pre className="whitespace-pre-wrap dark:text-gray-400">{JSON.stringify(f.evidence)}</pre></div>
+                    <div className="text-sm mt-1 italic dark:text-gray-300">Recommendation: {f.recommendation}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="mt-4 flex flex-col gap-3">
               <div>
                 <a href={`/api/v1/scans/${id}/report`} target="_blank" rel="noreferrer" className="bg-blue-600 text-white px-3 py-1 rounded">Download PDF Report</a>
