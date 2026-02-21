@@ -19,6 +19,7 @@ import Walkthrough, { shouldShowWalkthrough } from './components/Walkthrough';
 import ErrorBoundary from './components/ErrorBoundary';
 import RecoverAccount from './pages/RecoverAccount';
 import CookieBanner from './components/CookieBanner';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function AppShell() {
   const location = useLocation();
@@ -169,13 +170,13 @@ function AppShell() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/assets" element={<Assets />} />
-        <Route path="/scans" element={<Scans />} />
-        <Route path="/scans/:id" element={<ScanDetails />} />
-        <Route path="/feedback" element={<Feedback />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+        <Route path="/assets" element={<ProtectedRoute><Assets /></ProtectedRoute>} />
+        <Route path="/scans" element={<ProtectedRoute><Scans /></ProtectedRoute>} />
+        <Route path="/scans/:id" element={<ProtectedRoute><ScanDetails /></ProtectedRoute>} />
+        <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/recover-account" element={<RecoverAccount />} />
       </Routes>
     </>

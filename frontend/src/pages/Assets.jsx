@@ -23,6 +23,7 @@ export default function Assets(){
   const [editAssetIds, setEditAssetIds] = useState([])
   const [groupError, setGroupError] = useState('')
   const [newGroupAssetsOpen, setNewGroupAssetsOpen] = useState(false)
+  const [createGroupOpen, setCreateGroupOpen] = useState(false)
 
   const normalizeValue = (assetType, rawValue) => {
     const trimmed = rawValue.trim()
@@ -132,6 +133,8 @@ export default function Assets(){
     if (res.ok) {
       setNewGroupName('')
       setNewGroupAssetIds([])
+      setNewGroupAssetsOpen(false)
+      setCreateGroupOpen(false)
       fetchGroups()
     } else {
       const d = await res.json().catch(() => ({}))
@@ -233,6 +236,14 @@ export default function Assets(){
         </p>
 
         {/* Create new group */}
+        <button
+          type="button"
+          onClick={() => setCreateGroupOpen(v => !v)}
+          className="mb-4 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm font-medium"
+        >
+          {createGroupOpen ? '✕ Cancel' : '+ New Group'}
+        </button>
+        {createGroupOpen && (
         <form onSubmit={handleCreateGroup} className="bg-white dark:bg-cyber-dark p-4 rounded shadow dark:shadow-cyber mb-6">
           <div className="font-semibold text-sm mb-3 dark:text-white">Create New Group</div>
           <div className="mb-3">
@@ -284,6 +295,7 @@ export default function Assets(){
             Create Group
           </button>
         </form>
+        )}
 
         {/* Existing groups */}
         {groups.length === 0 ? (
