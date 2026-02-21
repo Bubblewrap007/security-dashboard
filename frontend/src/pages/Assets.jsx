@@ -22,6 +22,7 @@ export default function Assets(){
   const [editName, setEditName] = useState('')
   const [editAssetIds, setEditAssetIds] = useState([])
   const [groupError, setGroupError] = useState('')
+  const [newGroupAssetsOpen, setNewGroupAssetsOpen] = useState(false)
 
   const normalizeValue = (assetType, rawValue) => {
     const trimmed = rawValue.trim()
@@ -245,19 +246,36 @@ export default function Assets(){
           </div>
           {assets.length > 0 && (
             <div className="mb-3">
-              <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Assets in this group</label>
-              <div className="space-y-1 max-h-40 overflow-y-auto">
-                {assets.map(a => (
-                  <label key={a.id} className="flex items-center gap-2 text-sm cursor-pointer dark:text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={newGroupAssetIds.includes(a.id)}
-                      onChange={() => toggleAsset(a.id, newGroupAssetIds, setNewGroupAssetIds)}
-                    />
-                    {TYPE_LABELS[a.type] ?? a.type}: {a.value}
-                  </label>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => setNewGroupAssetsOpen(v => !v)}
+                className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-1 select-none"
+              >
+                <span
+                  className="transition-transform duration-150"
+                  style={{display: 'inline-block', transform: newGroupAssetsOpen ? 'rotate(90deg)' : 'rotate(0deg)'}}
+                >▶</span>
+                Assets in this group
+                {newGroupAssetIds.length > 0 && (
+                  <span className="ml-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs px-1.5 py-0.5 rounded-full">
+                    {newGroupAssetIds.length} selected
+                  </span>
+                )}
+              </button>
+              {newGroupAssetsOpen && (
+                <div className="space-y-1 max-h-40 overflow-y-auto pl-4 border-l-2 border-gray-200 dark:border-gray-600">
+                  {assets.map(a => (
+                    <label key={a.id} className="flex items-center gap-2 text-sm cursor-pointer dark:text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={newGroupAssetIds.includes(a.id)}
+                        onChange={() => toggleAsset(a.id, newGroupAssetIds, setNewGroupAssetIds)}
+                      />
+                      {TYPE_LABELS[a.type] ?? a.type}: {a.value}
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           {groupError && <div className="text-xs text-red-600 dark:text-red-400 mb-2">{groupError}</div>}

@@ -21,6 +21,10 @@ export default function Scans(){
   const [scans, setScans] = useState([])
   const [breachUsage, setBreachUsage] = useState({count: 0, limit: 2, date: ''})
   const [showConfirm, setShowConfirm] = useState(false)
+  const [showAddAsset, setShowAddAsset] = useState(false)
+  const [addType, setAddType] = useState('domain')
+  const [addValue, setAddValue] = useState('')
+  const [addError, setAddError] = useState('')
 
   async function fetchAssets(){
     const res = await apiFetch(`/api/v1/assets`, {credentials: 'include'})
@@ -116,6 +120,41 @@ export default function Scans(){
     if(res.ok){ setScans(await res.json()) }
   }
 
+  async function handleAddAsset(e) {
+    e.preventDefault()
+    setAddError('')
+    const v = addValue.trim()
+    if (!v) { setAddError('Value is required.'); return }
+    if (addType === 'email' && !v.includes('@')) { setAddError('Invalid email format.'); return }
+    if (addType === 'domain' && v.includes('@')) { setAddError('Use just the domain name, e.g. example.com'); return }
+    if (addType === 'ipv4') {
+      const ok = /^(\d{1,3}\.){3}\d{1,3}$/.test(v)
+      if (!ok || v.split('.').some(p => parseInt(p) > 255)) { setAddError('Invalid IPv4 address.'); return }
+    }
+    if (addType === 'url') {
+      try {
+        const u = new URL(v)
+        if (!['http:', 'https:'].includes(u.protocol)) { setAddError('URL must start with https://'); return }
+      } catch { setAddError('Invalid URL format, e.g. https://example.com'); return }
+    }
+    const normalized = addType === 'url' ? (v.toLowerCase().startsWith('http://') ? 'https://' + v.slice(7) : v.toLowerCase())
+      : ['email', 'domain'].includes(addType) ? v.toLowerCase() : v
+    const res = await apiFetch('/api/v1/assets', {
+      method: 'POST', credentials: 'include',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({type: addType, value: normalized}),
+    })
+    if (res.ok) {
+      setAddValue('')
+      setShowAddAsset(false)
+      fetchAssets()
+    } else if (res.status === 409) {
+      setAddError('This asset already exists.')
+    } else {
+      setAddError('Failed to add asset.')
+    }
+  }
+
   async function handleDelete(scanId){
     const ok = window.confirm('Delete this scan and its findings?')
     if(!ok) return
@@ -170,9 +209,52 @@ export default function Scans(){
       <div className="mb-4">
         {scanMode === 'asset' ? (
           <>
-            <h3 className="font-semibold mb-3 dark:text-white">Select one asset</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold dark:text-white">Select one asset</h3>
+              <button
+                type="button"
+                onClick={() => { setShowAddAsset(v => !v); setAddError('') }}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              >
+                {showAddAsset ? '✕ Cancel' : '+ Add Asset'}
+              </button>
+            </div>
+
+            {/* Inline add-asset form */}
+            {(showAddAsset || assets.length === 0) && (
+              <form onSubmit={handleAddAsset} className="mb-4 p-3 bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20 border border-blue-200 dark:border-blue-700 rounded">
+                <div className="text-xs font-semibold text-blue-800 dark:text-blue-300 mb-2">Add a new asset</div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <select
+                    value={addType}
+                    onChange={e => { setAddType(e.target.value); setAddValue(''); setAddError('') }}
+                    className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white px-2 py-1 rounded text-sm"
+                  >
+                    <option value="domain">Domain</option>
+                    <option value="url">URL</option>
+                    <option value="email">Email</option>
+                    <option value="ipv4">IP Address</option>
+                  </select>
+                  <input
+                    value={addValue}
+                    onChange={e => setAddValue(e.target.value)}
+                    placeholder={
+                      addType === 'email' ? 'you@company.com' :
+                      addType === 'domain' ? 'example.com' :
+                      addType === 'url' ? 'https://example.com' : '192.168.1.1'
+                    }
+                    className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white px-2 py-1 rounded text-sm w-52"
+                  />
+                  <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                    Add
+                  </button>
+                </div>
+                {addError && <div className="text-xs text-red-600 dark:text-red-400 mt-1">{addError}</div>}
+              </form>
+            )}
+
             {assets.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">No assets yet. <Link to="/assets" className="text-blue-600 hover:underline">Add assets first.</Link></p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">No assets yet — add one above to get started.</p>
             ) : (
               <div className="space-y-4">
                 {TYPE_ORDER.filter(t => assetsByType[t]?.length > 0).map(t => (
