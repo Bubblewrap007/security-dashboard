@@ -4,11 +4,11 @@ import { Link } from 'react-router-dom'
 import BackendStatusBanner from '../components/BackendStatusBanner'
 import { apiFetch } from '../utils/api'
 
-function formatScanDate(dateStr) {
+function formatScanDate(dateStr, tz) {
   if (!dateStr) return null
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return null
-  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short', ...(tz ? { timeZone: tz } : {}) })
 }
 
 const TYPE_LABELS = {
@@ -22,6 +22,7 @@ const TYPE_ORDER = ['domain', 'url', 'email', 'ipv4']
 export default function Scans(){
   const [assets, setAssets] = useState([])
   const [groups, setGroups] = useState([])
+  const [userTimezone, setUserTimezone] = useState(null)
   const [scanMode, setScanMode] = useState('asset') // 'asset' | 'group'
   const [selectedAssetId, setSelectedAssetId] = useState('')
   const [selectedGroupId, setSelectedGroupId] = useState('')
@@ -42,7 +43,11 @@ export default function Scans(){
     if(res.ok){ setGroups(await res.json()) }
   }
   useEffect(()=>{
-    fetchAssets(); fetchGroups(); fetchScans(); fetchBreachUsage();
+    fetchAssets(); fetchGroups(); fetchScans(); fetchBreachUsage()
+    apiFetch('/api/v1/auth/me', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.timezone) setUserTimezone(d.timezone) })
+      .catch(() => {})
   },[])
 
   // Auto-poll every 4 s while any scan is queued or running
@@ -437,9 +442,9 @@ export default function Scans(){
                 <div className="text-xs text-gray-500 dark:text-gray-400">
                   Assets: {(s.asset_ids || []).map(id => assetMap.get(id) || id).join(', ')}
                 </div>
-                {formatScanDate(s.completed_at || s.created_at) && (
+                {formatScanDate(s.completed_at || s.created_at, userTimezone) && (
                   <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                    {s.completed_at ? 'Completed' : 'Started'}: {formatScanDate(s.completed_at || s.created_at)}
+                    {s.completed_at ? 'Completed' : 'Started'}: {formatScanDate(s.completed_at || s.created_at, userTimezone)}
                   </div>
                 )}
               </div>

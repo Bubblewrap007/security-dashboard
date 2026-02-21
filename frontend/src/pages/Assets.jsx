@@ -20,6 +20,9 @@ export default function Assets(){
   const [deleteError, setDeleteError] = useState('')
   const [deleting, setDeleting] = useState(false)
 
+  // Group delete modal state
+  const [deleteGroupTarget, setDeleteGroupTarget] = useState(null) // { id, name }
+
   // Groups state
   const [groups, setGroups] = useState([])
   const [newGroupName, setNewGroupName] = useState('')
@@ -209,10 +212,15 @@ export default function Assets(){
     }
   }
 
-  async function handleDeleteGroup(groupId) {
-    if (!window.confirm('Delete this group? Your assets will not be affected.')) return
-    const res = await apiFetch(`/api/v1/asset-groups/${groupId}`, {method: 'DELETE', credentials: 'include'})
+  function handleDeleteGroup(group) {
+    setDeleteGroupTarget({ id: group.id, name: group.name })
+  }
+
+  async function confirmDeleteGroup() {
+    if (!deleteGroupTarget) return
+    const res = await apiFetch(`/api/v1/asset-groups/${deleteGroupTarget.id}`, { method: 'DELETE', credentials: 'include' })
     if (res.ok) fetchGroups()
+    setDeleteGroupTarget(null)
   }
 
   return (
@@ -389,7 +397,7 @@ export default function Assets(){
                     </div>
                     <div className="flex gap-2 ml-4 shrink-0">
                       <button onClick={() => startEdit(group)} className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium">Edit</button>
-                      <button onClick={() => handleDeleteGroup(group.id)} className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-medium">Delete</button>
+                      <button onClick={() => handleDeleteGroup(group)} className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-medium">Delete</button>
                     </div>
                   </div>
                 )}
@@ -439,6 +447,34 @@ export default function Assets(){
                 className="px-4 py-2 rounded bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
                 {deleting ? 'Removing…' : 'Remove Asset'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete group confirmation modal */}
+      {deleteGroupTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <h3 className="text-lg font-bold mb-1 text-red-600 dark:text-red-400">Remove Group</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Remove group{' '}
+              <span className="font-semibold text-gray-900 dark:text-white">"{deleteGroupTarget.name}"</span>?
+              Your assets will not be affected and you can recreate the group at any time.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setDeleteGroupTarget(null)}
+                className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm hover:bg-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteGroup}
+                className="px-4 py-2 rounded bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+              >
+                Remove Group
               </button>
             </div>
           </div>

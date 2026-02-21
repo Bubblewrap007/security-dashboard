@@ -94,6 +94,9 @@ export default function Login() {
         setLoading(false)
         return
       }
+      if (rememberDevice) {
+        localStorage.setItem('sd_remember_device', '1')
+      }
       window.location.href = '/dashboard'
     } catch (err) {
       setMfaError(`Network error: ${err?.message || 'Please try again.'}`)

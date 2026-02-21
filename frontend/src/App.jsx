@@ -65,6 +65,7 @@ function AppShell() {
     idleTimers.current.logout = setTimeout(async () => {
       clearIdleTimers();
       setShowIdleWarning(false);
+      localStorage.removeItem('sd_remember_device');
       await apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
       navigate('/login?message=idle-timeout');
     }, logoutMs);
@@ -72,12 +73,14 @@ function AppShell() {
 
   useEffect(() => {
     const lastClosed = localStorage.getItem(sessionCloseKey);
+    const isRemembered = localStorage.getItem('sd_remember_device') === '1';
     if (lastClosed) {
       // Always remove immediately — if we leave it, the next navigation re-checks
       // an aging timestamp and may trigger a spurious logout mid-session.
       localStorage.removeItem(sessionCloseKey);
       const elapsedMs = Date.now() - Number(lastClosed);
-      if (!Number.isNaN(elapsedMs) && elapsedMs >= 60 * 1000) {
+      // Skip forced logout when the user chose "remember this device for 30 days"
+      if (!isRemembered && !Number.isNaN(elapsedMs) && elapsedMs >= 60 * 1000) {
         apiFetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' }).finally(() => {
           if (isProtectedRoute(location.pathname)) {
             navigate('/login');

@@ -13,6 +13,7 @@ export default function Nav({ onStartWalkthrough }){
 
   const handleSignout = async () => {
     try {
+      localStorage.removeItem('sd_remember_device');
       await apiFetch('/api/v1/auth/logout', {
         method: 'POST',
         credentials: 'include'

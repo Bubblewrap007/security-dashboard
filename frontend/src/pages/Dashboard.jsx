@@ -33,6 +33,7 @@ const getScoreBgColor = (score) => {
 export default function Dashboard(){
   const [error, setError] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(null)
+  const [userTimezone, setUserTimezone] = useState(null)
   const [scans, setScans] = useState([])
   const [assets, setAssets] = useState([])
   const [groups, setGroups] = useState([])
@@ -49,6 +50,7 @@ export default function Dashboard(){
       }
       const d = await res.json()
       setIsAuthenticated(true)
+      if (d?.timezone) setUserTimezone(d.timezone)
       const scansRes = await apiFetch(`/api/v1/scans`, { credentials: 'include' })
       if (scansRes.ok) {
         const scansData = await scansRes.json()
@@ -182,11 +184,12 @@ export default function Dashboard(){
     )
     const points = sorted.map((s, idx) => {
       const dt = new Date(s.completed_at || s.created_at || 0)
+      const tzOpts = userTimezone ? { timeZone: userTimezone } : {}
       const name = !isNaN(dt.getTime())
-        ? dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+        ? dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', ...tzOpts })
         : `Scan ${idx + 1}`
       const fullDate = !isNaN(dt.getTime())
-        ? dt.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })
+        ? dt.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short', ...tzOpts })
         : ''
       return { name, score: s.score, fullDate }
     })
@@ -220,7 +223,7 @@ export default function Dashboard(){
       Array.isArray(s.asset_ids) && s.asset_ids.includes(selectedAsset)
     )
     return buildChartPoints(relevant)
-  }, [selectedAsset, completedScans, groups])
+  }, [selectedAsset, completedScans, groups, userTimezone])
 
   // Determine if the trend line is going up or down
   const trendIsPositive = useMemo(() => {
