@@ -34,6 +34,7 @@ export default function Dashboard(){
   const [isAuthenticated, setIsAuthenticated] = useState(null)
   const [scans, setScans] = useState([])
   const [assets, setAssets] = useState([])
+  const [groups, setGroups] = useState([])
   const [selectedAsset, setSelectedAsset] = useState('all')
   const [allFindings, setAllFindings] = useState([])
 
@@ -89,6 +90,10 @@ export default function Dashboard(){
       if (assetsRes.ok) {
         const assetsData = await assetsRes.json()
         setAssets(assetsData)
+      }
+      const groupsRes = await apiFetch(`/api/v1/asset-groups`, { credentials: 'include' })
+      if (groupsRes.ok) {
+        setGroups(await groupsRes.json())
       }
     })()
   },[])
@@ -148,6 +153,30 @@ export default function Dashboard(){
     scans.forEach((s, idx) => map.set(s.id, scans.length - idx))
     return map
   }, [scans])
+
+  // Per-group posture scores: for each asset in the group take the most recent completed
+  // scan score, then average them across all assets that have been scanned.
+  const groupScores = useMemo(() => {
+    return groups.map(group => {
+      const assetScores = []
+      ;(group.asset_ids || []).forEach(assetId => {
+        const scansForAsset = completedScans.filter(s =>
+          Array.isArray(s.asset_ids) && s.asset_ids.includes(assetId)
+        )
+        if (scansForAsset.length > 0) {
+          const mostRecent = [...scansForAsset].sort((a, b) =>
+            new Date(b.completed_at || b.created_at || 0) -
+            new Date(a.completed_at || a.created_at || 0)
+          )[0]
+          if (typeof mostRecent.score === 'number') assetScores.push(mostRecent.score)
+        }
+      })
+      const score = assetScores.length > 0
+        ? Math.round(assetScores.reduce((sum, v) => sum + v, 0) / assetScores.length)
+        : null
+      return { id: group.id, name: group.name, score, assetCount: (group.asset_ids || []).length }
+    })
+  }, [groups, completedScans])
 
   const latestAssetCount = useMemo(() => {
     if (!latestCompletedScan) return 0
@@ -351,6 +380,36 @@ export default function Dashboard(){
           )}
         </div>
       </div>
+      {/* Group Posture Scores */}
+      <div className="bg-white dark:bg-cyber-dark p-4 rounded shadow dark:shadow-cyber mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-semibold dark:text-cyber-blue">Group Posture</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Score per group based on the most recent scan for each asset in the group.</p>
+          </div>
+          <Link to="/assets" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Manage groups</Link>
+        </div>
+        {groupScores.length === 0 ? (
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            No groups yet. <Link to="/assets" className="text-blue-600 hover:underline">Create groups in Assets</Link> to track posture by team or service.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {groupScores.map(g => (
+              <div key={g.id} className={`p-3 rounded border ${g.score !== null ? getScoreBgColor(g.score) : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
+                <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate mb-1" title={g.name}>{g.name}</div>
+                {g.score !== null ? (
+                  <div className={`text-2xl font-bold ${getScoreColor(g.score)}`}>{g.score}<span className="text-xs font-normal text-gray-500 dark:text-gray-400">/100</span></div>
+                ) : (
+                  <div className="text-sm text-gray-400 dark:text-gray-500 italic">No scan data</div>
+                )}
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{g.assetCount} asset{g.assetCount !== 1 ? 's' : ''}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="bg-white dark:bg-cyber-dark p-4 rounded shadow dark:shadow-cyber mb-6">
         <h2 className="text-lg font-semibold mb-2 dark:text-cyber-blue">Recent Scans</h2>
         {scans.length === 0 ? (
