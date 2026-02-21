@@ -236,7 +236,16 @@ export default function ScanDetails(){
   return (
     <div className="p-8">
       <BackendStatusBanner />
-      <h1 className="text-2xl font-bold mb-2 dark:text-cyber-blue">Scan Report</h1>
+      <h1 className="text-2xl font-bold mb-1 dark:text-cyber-blue">Scan Report</h1>
+      <div className="mb-2 flex items-center gap-2">
+        <span
+          className="text-xs font-mono text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300"
+          title={`Full ID: ${scan.id} — click to copy`}
+          onClick={() => navigator.clipboard?.writeText(scan.id)}
+        >
+          ID: {scan.id}
+        </span>
+      </div>
       <div className="mb-2 dark:text-gray-300">
         Status: {scan.status}
         {!isActive && (() => {

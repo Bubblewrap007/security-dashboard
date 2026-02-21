@@ -421,8 +421,15 @@ export default function Scans(){
           {scans.map((s, idx)=>(
             <li key={s.id} className="bg-white dark:bg-cyber-dark p-3 rounded shadow dark:shadow-cyber flex justify-between items-center">
               <div>
-                <div className="font-bold dark:text-white">
+                <div className="font-bold dark:text-white flex items-center gap-2 flex-wrap">
                   Scan #{scans.length - idx}
+                  <span
+                    className="text-xs font-mono font-normal text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300"
+                    title={s.id}
+                    onClick={() => navigator.clipboard?.writeText(s.id)}
+                  >
+                    {s.id.slice(0, 8)}…
+                  </span>
                   {s.asset_ids && s.asset_ids.length > 1 && (() => {
                     const matchedGroup = scanGroupMap.get([...s.asset_ids].sort().join(','))
                     return (
