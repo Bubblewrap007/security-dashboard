@@ -4,6 +4,13 @@ import { Link } from 'react-router-dom'
 import BackendStatusBanner from '../components/BackendStatusBanner'
 import { apiFetch } from '../utils/api'
 
+function formatScanDate(dateStr) {
+  if (!dateStr) return null
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return null
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
 const TYPE_LABELS = {
   domain: 'Domain Names',
   url:    'Website URLs',
@@ -37,6 +44,14 @@ export default function Scans(){
   useEffect(()=>{
     fetchAssets(); fetchGroups(); fetchScans(); fetchBreachUsage();
   },[])
+
+  // Auto-poll every 4 s while any scan is queued or running
+  useEffect(() => {
+    const hasActive = scans.some(s => s.status === 'queued' || s.status === 'running')
+    if (!hasActive) return
+    const id = setInterval(fetchScans, 4000)
+    return () => clearInterval(id)
+  }, [scans])
 
   async function fetchBreachUsage() {
     const res = await apiFetch('/api/v1/scans/email-breach-usage', {credentials: 'include'})
@@ -383,9 +398,8 @@ export default function Scans(){
             </div>
           </Modal>
 
-          <button onClick={fetchScans} className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700" title="Refresh scan list">🔄 Refresh</button>
-          {scans.some(s => s.status === 'queued') && (
-            <span className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold">Scans queued — refresh to check status</span>
+          {scans.some(s => s.status === 'queued' || s.status === 'running') && (
+            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium animate-pulse">● Auto-updating…</span>
           )}
         </div>
       </div>
@@ -423,6 +437,11 @@ export default function Scans(){
                 <div className="text-xs text-gray-500 dark:text-gray-400">
                   Assets: {(s.asset_ids || []).map(id => assetMap.get(id) || id).join(', ')}
                 </div>
+                {formatScanDate(s.completed_at || s.created_at) && (
+                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                    {s.completed_at ? 'Completed' : 'Started'}: {formatScanDate(s.completed_at || s.created_at)}
+                  </div>
+                )}
               </div>
               <div className="flex items-center space-x-3">
                 <Link className="text-blue-600 dark:text-cyber-blue" to={`/scans/${s.id}`}>View</Link>

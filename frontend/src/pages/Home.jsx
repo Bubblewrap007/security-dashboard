@@ -118,12 +118,8 @@ export default function Home({ onStartWalkthrough }) {
         <div className="grid md:grid-cols-2 gap-12 items-start mb-20">
           {/* Left: copy + CTAs */}
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <img src="/shield-logo.svg" alt="Shield" className="w-10 h-10 drop-shadow-lg" />
-              <span className="text-xs font-semibold uppercase tracking-widest text-blue-500 dark:text-cyber-blue">Beta</span>
-            </div>
-            <h1 className="text-5xl font-bold text-gray-900 dark:text-cyber-blue mb-5 dark:drop-shadow-[0_0_15px_rgba(0,217,255,0.5)] leading-tight">
-              Security Dashboard
+            <h1 className="text-5xl font-bold text-gray-900 dark:text-cyber-blue mb-6 dark:drop-shadow-[0_0_15px_rgba(0,217,255,0.5)] leading-tight">
+              Security Dashboard <span className="text-lg font-semibold text-gray-500 dark:text-gray-300">(Beta)</span>
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
               Comprehensive security monitoring for your organisation — without the enterprise price tag.
@@ -148,15 +144,12 @@ export default function Home({ onStartWalkthrough }) {
             {/* CTAs */}
             <div className="flex flex-wrap gap-3 items-center">
               {authStatus === 'loggedin' ? (
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => navigate('/dashboard')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition"
-                  >
-                    Go to Dashboard →
-                  </button>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">You're already signed in.</span>
-                </div>
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition"
+                >
+                  Go to Dashboard →
+                </button>
               ) : (
                 <button
                   onClick={() => navigate('/register')}
@@ -174,15 +167,28 @@ export default function Home({ onStartWalkthrough }) {
             </div>
           </div>
 
-          {/* Right: always-visible demo preview */}
-          <div className="flex justify-center md:justify-end">
-            <div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-3 uppercase tracking-wide font-semibold text-center">
-                Live Preview
-              </p>
-              <DemoPreview />
+          {/* Right: shield logo */}
+          <div className="flex justify-center">
+            <div className="relative w-full max-w-md h-96 flex items-center justify-center">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full blur-3xl opacity-20 animate-pulse"></div>
+              <div className="absolute inset-0 bg-gradient-to-l from-blue-500 to-cyan-400 rounded-full blur-2xl opacity-15 animate-pulse" style={{animationDelay: '0.3s'}}></div>
+              <div className="relative z-10 w-full h-full drop-shadow-[0_0_30px_rgba(0,217,255,0.4)]">
+                <img
+                  src="/shield-logo.svg"
+                  alt="Security Shield Logo"
+                  className="w-full h-full object-contain drop-shadow-[0_10px_40px_rgba(0,100,200,0.5)]"
+                />
+              </div>
             </div>
           </div>
+        </div>
+
+        {/* Demo preview */}
+        <div className="flex flex-col items-center mb-16">
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-4 uppercase tracking-widest font-semibold">
+            Sample Dashboard Preview
+          </p>
+          <DemoPreview />
         </div>
 
         {/* Feature Cards */}

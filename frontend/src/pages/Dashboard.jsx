@@ -6,10 +6,12 @@ import { apiFetch } from '../utils/api'
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
+    const p = payload[0].payload
     return (
       <div className="bg-white dark:bg-cyber-dark border border-gray-300 dark:border-cyber-blue p-3 rounded shadow-lg dark:shadow-cyber">
-        <p className="text-sm font-semibold text-gray-900 dark:text-cyber-blue">{payload[0].payload.name}</p>
-        <p className="text-sm text-gray-700 dark:text-gray-300">Score: <span className="font-bold dark:text-cyber-blue">{payload[0].payload.score || payload[0].value}</span></p>
+        <p className="text-sm font-semibold text-gray-900 dark:text-cyber-blue">{p.name}</p>
+        {p.fullDate && <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{p.fullDate}</p>}
+        <p className="text-sm text-gray-700 dark:text-gray-300">Score: <span className="font-bold dark:text-cyber-blue">{p.score ?? payload[0].value}</span></p>
       </div>
     )
   }
@@ -178,7 +180,16 @@ export default function Dashboard(){
     const sorted = [...filteredScans].sort((a, b) =>
       new Date(a.completed_at || a.created_at || 0) - new Date(b.completed_at || b.created_at || 0)
     )
-    const points = sorted.map((s, idx) => ({ name: `Scan ${idx + 1}`, score: s.score }))
+    const points = sorted.map((s, idx) => {
+      const dt = new Date(s.completed_at || s.created_at || 0)
+      const name = !isNaN(dt.getTime())
+        ? dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+        : `Scan ${idx + 1}`
+      const fullDate = !isNaN(dt.getTime())
+        ? dt.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : ''
+      return { name, score: s.score, fullDate }
+    })
     const avg = points.reduce((sum, s) => sum + s.score, 0) / points.length
     const n = points.length
     let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0
@@ -461,7 +472,7 @@ export default function Dashboard(){
                 name="Average"
               />
               <CartesianGrid stroke="#334155" strokeDasharray="3 3" />
-              <XAxis dataKey="name" stroke="#94a3b8" />
+              <XAxis dataKey="name" stroke="#94a3b8" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" height={50} interval="preserveStartEnd" />
               <YAxis stroke="#94a3b8" domain={[0, 100]} />
               <Tooltip content={<CustomTooltip />} />
             </LineChart>

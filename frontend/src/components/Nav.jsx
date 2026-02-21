@@ -109,6 +109,7 @@ export default function Nav({ onStartWalkthrough }){
         <div className="flex items-center space-x-4">
           {authChecked && isAuthenticated ? (
             <>
+              <Link to="/" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Home</Link>
               <Link to="/account" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Account</Link>
               <Link to="/dashboard" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Dashboard</Link>
               <Link to="/assets" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">Assets</Link>
