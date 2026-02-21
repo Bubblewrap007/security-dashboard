@@ -50,6 +50,16 @@ export default function Scans(){
     return map
   }, [assets])
 
+  // Map sorted asset_ids string → group, so we can resolve the group name for group scans
+  const scanGroupMap = useMemo(() => {
+    const map = new Map()
+    groups.forEach(g => {
+      const key = [...(g.asset_ids || [])].sort().join(',')
+      if (key) map.set(key, g)
+    })
+    return map
+  }, [groups])
+
   // Assets grouped by type for the single-asset picker
   const assetsByType = useMemo(() => {
     const grouped = {}
@@ -392,11 +402,14 @@ export default function Scans(){
               <div>
                 <div className="font-bold dark:text-white">
                   Scan #{scans.length - idx}
-                  {s.asset_ids && s.asset_ids.length > 1 && (
-                    <span className="ml-2 text-xs font-normal bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded">
-                      Group · {s.asset_ids.length} assets
-                    </span>
-                  )}
+                  {s.asset_ids && s.asset_ids.length > 1 && (() => {
+                    const matchedGroup = scanGroupMap.get([...s.asset_ids].sort().join(','))
+                    return (
+                      <span className="ml-2 text-xs font-normal bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded">
+                        {matchedGroup ? matchedGroup.name : `Group · ${s.asset_ids.length} assets`}
+                      </span>
+                    )
+                  })()}
                 </div>
                 <div className="text-sm dark:text-gray-300">
                   <span title="Queued = waiting for worker. Running = in progress. Completed = finished.">Status: {s.status}</span>
