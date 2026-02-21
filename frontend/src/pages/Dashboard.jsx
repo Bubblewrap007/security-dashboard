@@ -39,6 +39,7 @@ export default function Dashboard(){
   const [groups, setGroups] = useState([])
   const [selectedAsset, setSelectedAsset] = useState('all')
   const [allFindings, setAllFindings] = useState([])
+  const [deleteScanTarget, setDeleteScanTarget] = useState(null) // { id, number }
 
   useEffect(()=>{
     (async ()=>{
@@ -266,6 +267,15 @@ export default function Dashboard(){
     return `${diffDays} days ago`
   }, [latestCompletedScan])
 
+  async function confirmDeleteScan() {
+    if (!deleteScanTarget) return
+    const res = await apiFetch(`/api/v1/scans/${deleteScanTarget.id}`, { method: 'DELETE', credentials: 'include' })
+    if (res.ok) {
+      setScans(prev => prev.filter(s => s.id !== deleteScanTarget.id))
+    }
+    setDeleteScanTarget(null)
+  }
+
   if(isAuthenticated === false) return <Navigate to="/login" />
 
   if(error) return <div className="p-8">{error}</div>
@@ -405,10 +415,22 @@ export default function Dashboard(){
               <li key={s.id} className="flex flex-col gap-1 border-b border-gray-200 dark:border-gray-700 pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">Scan #{scans.length - idx}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">({s.id})</span>
+                    <span className="text-sm font-semibold dark:text-white">Scan #{scans.length - idx}</span>
+                    <span
+                      className="text-xs font-mono text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300"
+                      title={s.id}
+                      onClick={() => navigator.clipboard?.writeText(s.id)}
+                    >
+                      {s.id.slice(0, 8)}…
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400" title="Queued = waiting for worker. Running = in progress. Completed = finished.">{s.status}</span>
                   </div>
-                  <span className="text-xs text-gray-500" title="Queued = waiting for worker. Running = in progress. Completed = finished.">{s.status}</span>
+                  <button
+                    onClick={() => setDeleteScanTarget({ id: s.id, number: scans.length - idx })}
+                    className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                  >
+                    Remove
+                  </button>
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">
                   Assets: {(s.asset_ids || []).map(id => assetMap.get(id) || id).join(', ')} · Score: {s.score ?? 'N/A'}
@@ -519,6 +541,34 @@ export default function Dashboard(){
           </div>
         </div>
       </div>
+
+      {/* Remove Scan confirmation modal */}
+      {deleteScanTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <h3 className="text-lg font-bold mb-1 text-red-600 dark:text-red-400">Remove Scan</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Remove{' '}
+              <span className="font-semibold text-gray-900 dark:text-white">Scan #{deleteScanTarget.number}</span>
+              {' '}and all its findings? This cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setDeleteScanTarget(null)}
+                className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm hover:bg-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteScan}
+                className="px-4 py-2 rounded bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+              >
+                Remove Scan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
