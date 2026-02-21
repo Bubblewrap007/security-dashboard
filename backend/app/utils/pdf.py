@@ -1,7 +1,20 @@
 import textwrap
+from datetime import timezone as _utc_tz
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from io import BytesIO
+
+
+def _localise(dt, tz_name: str):
+    """Convert a naive UTC datetime to a timezone-aware one in tz_name."""
+    if dt is None:
+        return None
+    try:
+        from zoneinfo import ZoneInfo
+        aware = dt.replace(tzinfo=_utc_tz.utc)
+        return aware.astimezone(ZoneInfo(tz_name))
+    except Exception:
+        return dt.replace(tzinfo=_utc_tz.utc)
 
 SEVERITY_DEDUCTIONS = {"critical": 25, "high": 15, "medium": 7, "low": 3}
 SEVERITY_ORDER      = {"critical": 0, "high": 1, "medium": 2, "low": 3}
@@ -42,7 +55,7 @@ def _new_page_if_needed(c, y, needed, height):
     return y
 
 
-def build_scan_pdf(scan, findings, assets=None):
+def build_scan_pdf(scan, findings, assets=None, user_tz: str = None):
     buffer  = BytesIO()
     c       = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
@@ -89,7 +102,13 @@ def build_scan_pdf(scan, findings, assets=None):
 
     if getattr(scan, "completed_at", None):
         c.setFont("Helvetica", 10)
-        c.drawString(40, y, f"Completed: {scan.completed_at.strftime('%d %b %Y  %H:%M UTC')}")
+        if user_tz:
+            local_dt = _localise(scan.completed_at, user_tz)
+            tz_label = local_dt.strftime("%Z") if local_dt.tzinfo else "UTC"
+            ts_str = local_dt.strftime(f"%d %b %Y  %H:%M {tz_label}")
+        else:
+            ts_str = scan.completed_at.strftime("%d %b %Y  %H:%M UTC")
+        c.drawString(40, y, f"Completed: {ts_str}")
         y -= 14
 
     y -= 4

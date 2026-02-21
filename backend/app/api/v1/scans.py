@@ -178,7 +178,14 @@ async def get_report(scan_id: str, user_id: str = Depends(get_current_user_id)):
                     assets.append(a)
             except Exception:
                 pass
-        pdf_bytes = build_scan_pdf(scan, findings, assets)
+        from ...repositories.users import UserRepository
+        user_tz = None
+        try:
+            u = await UserRepository().get_by_id(user_id)
+            user_tz = getattr(u, "timezone", None) or None
+        except Exception:
+            pass
+        pdf_bytes = build_scan_pdf(scan, findings, assets, user_tz=user_tz)
         headers = {"Content-Disposition": f"attachment; filename=scan-{scan_id}.pdf"}
         return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
     except Exception as e:
@@ -218,7 +225,14 @@ async def get_report_encrypted(scan_id: str, request: Request, user_id: str = De
                 assets.append(a)
         except Exception:
             pass
-    pdf_bytes = build_scan_pdf(scan, findings, assets)
+    from ...repositories.users import UserRepository
+    user_tz = None
+    try:
+        u = await UserRepository().get_by_id(user_id)
+        user_tz = getattr(u, "timezone", None) or None
+    except Exception:
+        pass
+    pdf_bytes = build_scan_pdf(scan, findings, assets, user_tz=user_tz)
 
     salt = os.urandom(16)
     kdf = PBKDF2HMAC(
