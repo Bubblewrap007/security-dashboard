@@ -249,7 +249,7 @@ export default function Assets(){
               <button
                 type="button"
                 onClick={() => setNewGroupAssetsOpen(v => !v)}
-                className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500 transition-colors select-none mb-1"
+                className="inline-flex items-center justify-between gap-4 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500 transition-colors select-none mb-1"
               >
                 <span className="flex items-center gap-2">
                   <span>Assets in this group</span>
