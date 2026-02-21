@@ -426,7 +426,7 @@ export default function Scans(){
               </div>
               <div className="flex items-center space-x-3">
                 <Link className="text-blue-600 dark:text-cyber-blue" to={`/scans/${s.id}`}>View</Link>
-                <button onClick={()=>handleDelete(s.id)} className="text-sm text-red-600 dark:text-red-500 hover:underline font-semibold">Delete</button>
+                <button onClick={()=>handleDelete(s.id)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-medium">Delete</button>
               </div>
             </li>
           ))}

@@ -50,6 +50,8 @@ export default function ScanDetails(){
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState(null)
   const [viewMode, setViewMode] = useState('group') // 'group' | 'all' — only applies to group scans
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const [pdfError, setPdfError] = useState('')
 
   const isGroupScan = scan ? (scan.asset_ids && scan.asset_ids.length > 1) : false
 
@@ -140,6 +142,31 @@ export default function ScanDetails(){
     }, 2000)
     return () => clearInterval(interval)
   }, [scan?.status, id])
+
+  const downloadReport = async () => {
+    setPdfLoading(true)
+    setPdfError('')
+    try {
+      const res = await apiFetch(`/api/v1/scans/${id}/report`, { credentials: 'include' })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.detail || 'Failed to generate PDF report')
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `scan-${id}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      setPdfError(err.message)
+    } finally {
+      setPdfLoading(false)
+    }
+  }
 
   const downloadEncryptedReport = async () => {
     setEncryptError('')
@@ -415,7 +442,14 @@ export default function ScanDetails(){
             )}
             <div className="mt-4 flex flex-col gap-3">
               <div>
-                <a href={`/api/v1/scans/${id}/report`} target="_blank" rel="noreferrer" className="bg-blue-600 text-white px-3 py-1 rounded">Download PDF Report</a>
+                <button
+                  onClick={downloadReport}
+                  disabled={pdfLoading}
+                  className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {pdfLoading ? 'Generating…' : 'Download PDF Report'}
+                </button>
+                {pdfError && <div className="text-xs text-red-600 dark:text-red-400 mt-1">{pdfError}</div>}
               </div>
               <div className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-4">
                 <div className="text-sm font-semibold mb-2 text-slate-900 dark:text-white">Encrypt report (recommended for sharing)</div>

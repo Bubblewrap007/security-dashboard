@@ -219,7 +219,7 @@ export default function Assets(){
                 </div>
               )}
             </div>
-            <button onClick={()=>handleDelete(a.id)} className="text-sm text-red-600 dark:text-red-500 hover:underline font-semibold">Remove</button>
+            <button onClick={()=>handleDelete(a.id)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-medium">Remove</button>
           </li>
         ))}
       </ul>
@@ -249,21 +249,22 @@ export default function Assets(){
               <button
                 type="button"
                 onClick={() => setNewGroupAssetsOpen(v => !v)}
-                className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-1 select-none"
+                className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500 transition-colors select-none mb-1"
               >
-                <span
-                  className="transition-transform duration-150"
-                  style={{display: 'inline-block', transform: newGroupAssetsOpen ? 'rotate(90deg)' : 'rotate(0deg)'}}
-                >▶</span>
-                Assets in this group
-                {newGroupAssetIds.length > 0 && (
-                  <span className="ml-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs px-1.5 py-0.5 rounded-full">
-                    {newGroupAssetIds.length} selected
-                  </span>
-                )}
+                <span className="flex items-center gap-2">
+                  <span>Assets in this group</span>
+                  {newGroupAssetIds.length > 0 && (
+                    <span className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs px-1.5 py-0.5 rounded-full font-medium">
+                      {newGroupAssetIds.length} selected
+                    </span>
+                  )}
+                </span>
+                <svg className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${newGroupAssetsOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
               {newGroupAssetsOpen && (
-                <div className="space-y-1 max-h-40 overflow-y-auto pl-4 border-l-2 border-gray-200 dark:border-gray-600">
+                <div className="space-y-1 max-h-40 overflow-y-auto px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
                   {assets.map(a => (
                     <label key={a.id} className="flex items-center gap-2 text-sm cursor-pointer dark:text-gray-300">
                       <input
@@ -339,9 +340,9 @@ export default function Assets(){
                           : 'No assets assigned'}
                       </div>
                     </div>
-                    <div className="flex gap-3 ml-4 shrink-0">
-                      <button onClick={() => startEdit(group)} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
-                      <button onClick={() => handleDeleteGroup(group.id)} className="text-sm text-red-600 dark:text-red-500 hover:underline font-semibold">Delete</button>
+                    <div className="flex gap-2 ml-4 shrink-0">
+                      <button onClick={() => startEdit(group)} className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium">Edit</button>
+                      <button onClick={() => handleDeleteGroup(group.id)} className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-medium">Delete</button>
                     </div>
                   </div>
                 )}
