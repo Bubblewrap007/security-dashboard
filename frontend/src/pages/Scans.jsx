@@ -182,8 +182,8 @@ export default function Scans(){
         </p>
       </div>
 
-      {/* Mode toggle */}
-      <div className="flex gap-2 mb-4">
+      {/* Mode toggle + Add Asset */}
+      <div className="flex gap-2 items-center mb-4">
         <button
           onClick={() => setScanMode('asset')}
           className={`px-4 py-2 rounded text-sm font-medium border transition-colors ${
@@ -204,21 +204,23 @@ export default function Scans(){
         >
           Group Scan
         </button>
+        <button
+          type="button"
+          onClick={() => { setShowAddAsset(v => !v); setAddError('') }}
+          className={`px-3 py-1.5 rounded text-xs font-medium border transition-colors ${
+            showAddAsset
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-600 hover:bg-blue-50 dark:hover:bg-gray-700'
+          }`}
+        >
+          {showAddAsset ? '✕ Cancel' : '+ Add Asset'}
+        </button>
       </div>
 
       <div className="mb-4">
         {scanMode === 'asset' ? (
           <>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold dark:text-white">Select one asset</h3>
-              <button
-                type="button"
-                onClick={() => { setShowAddAsset(v => !v); setAddError('') }}
-                className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-              >
-                {showAddAsset ? '✕ Cancel' : '+ Add Asset'}
-              </button>
-            </div>
+            <h3 className="font-semibold mb-3 dark:text-white">Select one asset</h3>
 
             {/* Inline add-asset form */}
             {(showAddAsset || assets.length === 0) && (
