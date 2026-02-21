@@ -177,13 +177,20 @@ export default function Dashboard(){
   }, [assets])
 
   // Build chart points from a filtered list of completed scans
+  // Force UTC interpretation of naive backend datetime strings (no Z suffix)
+  function toUtcDate(dateStr) {
+    if (!dateStr) return new Date(0)
+    const str = /[zZ]|[+-]\d{2}:?\d{2}$/.test(dateStr) ? dateStr : `${dateStr}Z`
+    return new Date(str)
+  }
+
   function buildChartPoints(filteredScans) {
     if (filteredScans.length === 0) return null
     const sorted = [...filteredScans].sort((a, b) =>
-      new Date(a.completed_at || a.created_at || 0) - new Date(b.completed_at || b.created_at || 0)
+      toUtcDate(a.completed_at || a.created_at) - toUtcDate(b.completed_at || b.created_at)
     )
     const points = sorted.map((s, idx) => {
-      const dt = new Date(s.completed_at || s.created_at || 0)
+      const dt = toUtcDate(s.completed_at || s.created_at)
       const tzOpts = userTimezone ? { timeZone: userTimezone } : {}
       const name = !isNaN(dt.getTime())
         ? dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', ...tzOpts })

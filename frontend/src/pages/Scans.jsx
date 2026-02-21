@@ -6,7 +6,9 @@ import { apiFetch } from '../utils/api'
 
 function formatScanDate(dateStr, tz) {
   if (!dateStr) return null
-  const d = new Date(dateStr)
+  // Backend sends naive UTC strings (no Z) — force UTC interpretation
+  const str = /[zZ]|[+-]\d{2}:?\d{2}$/.test(dateStr) ? dateStr : `${dateStr}Z`
+  const d = new Date(str)
   if (isNaN(d.getTime())) return null
   return d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short', ...(tz ? { timeZone: tz } : {}) })
 }

@@ -131,23 +131,65 @@ export default function Account() {
     }
   };
 
-  const timeZoneOptions = (() => {
-    if (typeof Intl !== 'undefined' && Intl.supportedValuesOf) {
-      return Intl.supportedValuesOf('timeZone');
-    }
-    return [
-      'UTC',
-      'America/New_York',
-      'America/Chicago',
-      'America/Denver',
-      'America/Los_Angeles',
-      'Europe/London',
-      'Europe/Paris',
-      'Asia/Tokyo',
-      'Asia/Manila',
-      'Australia/Sydney',
-    ];
-  })();
+  const timeZoneOptions = [
+    { value: 'UTC',                    label: 'UTC — Coordinated Universal Time' },
+    // Americas
+    { value: 'America/St_Johns',       label: 'UTC-3:30 — St. John\'s (NST)' },
+    { value: 'America/Halifax',        label: 'UTC-4 — Halifax (AST)' },
+    { value: 'America/New_York',       label: 'UTC-5 — New York (EST)' },
+    { value: 'America/Chicago',        label: 'UTC-6 — Chicago (CST)' },
+    { value: 'America/Denver',         label: 'UTC-7 — Denver (MST)' },
+    { value: 'America/Phoenix',        label: 'UTC-7 — Phoenix (MST, no DST)' },
+    { value: 'America/Los_Angeles',    label: 'UTC-8 — Los Angeles (PST)' },
+    { value: 'America/Anchorage',      label: 'UTC-9 — Anchorage (AKST)' },
+    { value: 'Pacific/Honolulu',       label: 'UTC-10 — Honolulu (HST)' },
+    { value: 'America/Sao_Paulo',      label: 'UTC-3 — São Paulo (BRT)' },
+    { value: 'America/Argentina/Buenos_Aires', label: 'UTC-3 — Buenos Aires (ART)' },
+    { value: 'America/Santiago',       label: 'UTC-4 — Santiago (CLT)' },
+    { value: 'America/Bogota',         label: 'UTC-5 — Bogotá (COT)' },
+    { value: 'America/Mexico_City',    label: 'UTC-6 — Mexico City (CST)' },
+    { value: 'America/Toronto',        label: 'UTC-5 — Toronto (EST)' },
+    { value: 'America/Vancouver',      label: 'UTC-8 — Vancouver (PST)' },
+    // Europe
+    { value: 'Europe/London',          label: 'UTC+0 — London (GMT)' },
+    { value: 'Europe/Dublin',          label: 'UTC+0 — Dublin (GMT)' },
+    { value: 'Europe/Lisbon',          label: 'UTC+0 — Lisbon (WET)' },
+    { value: 'Europe/Paris',           label: 'UTC+1 — Paris / Berlin / Rome (CET)' },
+    { value: 'Europe/Amsterdam',       label: 'UTC+1 — Amsterdam (CET)' },
+    { value: 'Europe/Stockholm',       label: 'UTC+1 — Stockholm (CET)' },
+    { value: 'Europe/Warsaw',          label: 'UTC+1 — Warsaw (CET)' },
+    { value: 'Europe/Athens',          label: 'UTC+2 — Athens (EET)' },
+    { value: 'Europe/Bucharest',       label: 'UTC+2 — Bucharest (EET)' },
+    { value: 'Europe/Helsinki',        label: 'UTC+2 — Helsinki (EET)' },
+    { value: 'Europe/Istanbul',        label: 'UTC+3 — Istanbul (TRT)' },
+    { value: 'Europe/Moscow',          label: 'UTC+3 — Moscow (MSK)' },
+    // Africa
+    { value: 'Africa/Lagos',           label: 'UTC+1 — Lagos / West Africa (WAT)' },
+    { value: 'Africa/Cairo',           label: 'UTC+2 — Cairo (EET)' },
+    { value: 'Africa/Nairobi',         label: 'UTC+3 — Nairobi (EAT)' },
+    { value: 'Africa/Johannesburg',    label: 'UTC+2 — Johannesburg (SAST)' },
+    // Middle East
+    { value: 'Asia/Dubai',             label: 'UTC+4 — Dubai (GST)' },
+    { value: 'Asia/Riyadh',            label: 'UTC+3 — Riyadh (AST)' },
+    { value: 'Asia/Tehran',            label: 'UTC+3:30 — Tehran (IRST)' },
+    // Asia
+    { value: 'Asia/Karachi',           label: 'UTC+5 — Karachi (PKT)' },
+    { value: 'Asia/Kolkata',           label: 'UTC+5:30 — Mumbai / Delhi (IST)' },
+    { value: 'Asia/Dhaka',             label: 'UTC+6 — Dhaka (BST)' },
+    { value: 'Asia/Bangkok',           label: 'UTC+7 — Bangkok / Jakarta (ICT)' },
+    { value: 'Asia/Singapore',         label: 'UTC+8 — Singapore (SGT)' },
+    { value: 'Asia/Shanghai',          label: 'UTC+8 — Beijing / Shanghai (CST)' },
+    { value: 'Asia/Manila',            label: 'UTC+8 — Manila (PHT)' },
+    { value: 'Asia/Hong_Kong',         label: 'UTC+8 — Hong Kong (HKT)' },
+    { value: 'Asia/Tokyo',             label: 'UTC+9 — Tokyo (JST)' },
+    { value: 'Asia/Seoul',             label: 'UTC+9 — Seoul (KST)' },
+    // Pacific / Australia
+    { value: 'Australia/Perth',        label: 'UTC+8 — Perth (AWST)' },
+    { value: 'Australia/Adelaide',     label: 'UTC+9:30 — Adelaide (ACST)' },
+    { value: 'Australia/Sydney',       label: 'UTC+10 — Sydney / Melbourne (AEST)' },
+    { value: 'Pacific/Auckland',       label: 'UTC+12 — Auckland (NZST)' },
+    { value: 'Pacific/Fiji',           label: 'UTC+12 — Fiji (FJT)' },
+  ];
 
   const handleTimeZoneSave = async (tz) => {
     setTimeZoneError('');
@@ -681,8 +723,8 @@ export default function Account() {
               className="w-full p-3 bg-gray-800 border border-gray-700 rounded text-white"
             >
               <option value="">Auto-detect</option>
-              {timeZoneOptions.map((tz) => (
-                <option key={tz} value={tz}>{tz}</option>
+              {timeZoneOptions.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
             {timeZoneError && <p className="text-red-400">{timeZoneError}</p>}
