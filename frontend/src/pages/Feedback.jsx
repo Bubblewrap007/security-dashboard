@@ -11,11 +11,11 @@ export default function Feedback() {
         <div className="bg-white dark:bg-cyber-dark rounded-lg shadow-lg dark:shadow-cyber p-6 border border-gray-200 dark:border-cyber-blue">
           <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-cyber-blue">Feedback</h1>
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-            Thanks for helping improve Security Dashboard. Please share any bugs, feature requests, or UX issues.
+            Thanks for helping improve Securalith. Please share any bugs, feature requests, or UX issues.
           </p>
           <div className="w-full aspect-[4/5] md:aspect-[16/9]">
             <iframe
-              title="Security Dashboard Feedback Form"
+              title="Securalith Feedback Form"
               src={feedbackUrl}
               className="w-full h-full rounded border border-gray-200 dark:border-gray-700 bg-white"
               loading="lazy"

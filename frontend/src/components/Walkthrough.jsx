@@ -5,7 +5,7 @@ const STORAGE_KEY = 'sd_walkthrough_seen'
 export default function Walkthrough({ open, onClose }) {
   const steps = useMemo(() => ([
     {
-      title: 'Welcome to Security Dashboard',
+      title: 'Welcome to Securalith',
       body: 'This quick tour shows you the main areas: login, assets, scans, and reports.'
     },
     {

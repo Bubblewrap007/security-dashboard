@@ -7,7 +7,7 @@ import os
 from fastapi.middleware.cors import CORSMiddleware
 
 ENV = os.getenv("ENV", "development")
-app = FastAPI(title="Security Dashboard - Backend (Secure)", docs_url=("/docs" if ENV != "production" else None), redoc_url=("/redoc" if ENV != "production" else None))
+app = FastAPI(title="Securalith - Backend", docs_url=("/docs" if ENV != "production" else None), redoc_url=("/redoc" if ENV != "production" else None))
 
 # CORS - allow configured frontend origins; avoid wildcard in production
 def _get_cors_origins():

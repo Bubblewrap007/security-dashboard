@@ -79,7 +79,7 @@ def check_email_hibp(scan_id: str, asset_id: str, email: str) -> List[Dict]:
         findings.append(build_finding(scan_id, asset_id, "hibp:apikey_missing", "low", "HIBP API key missing", {"note": "HIBP API key not provided; email breach lookup was skipped"}, "Provide a HIBP API key in environment for breach checks"))
         return findings
     # call HIBP breachedaccount endpoint
-    headers = {"hibp-api-key": HIBP_API_KEY, "user-agent": "security-dashboard"}
+    headers = {"hibp-api-key": HIBP_API_KEY, "user-agent": "securalith"}
     url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}"
     params = {"truncateResponse": "true"}
     r = requests.get(url, headers=headers, params=params, timeout=10)
